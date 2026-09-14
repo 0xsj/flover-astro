@@ -1,0 +1,11 @@
+---
+interface Props {
+	value: string;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { value, class: className, ...rest } = Astro.props;
+---
+
+<div {...rest} role="tabpanel" tabindex="0" class:list={['tabPanel', className]} data-tab-panel data-tab-value={value}><slot /></div>

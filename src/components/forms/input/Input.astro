@@ -1,0 +1,15 @@
+---
+type ControlSize = 'sm' | 'md' | 'lg';
+
+interface Props {
+	size?: ControlSize;
+	mono?: boolean;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { size = 'md', mono = false, class: className, ...rest } = Astro.props;
+const sizeClass = `formInput${size[0].toUpperCase()}${size.slice(1)}`;
+---
+
+<input {...rest} class:list={['formInput', sizeClass, mono && 'formInputMono', className]} />

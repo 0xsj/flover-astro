@@ -1,0 +1,51 @@
+---
+export type FailureKind = 'unauthenticated' | 'forbidden' | 'not-found' | 'conflict' | 'validation' | 'timeout' | 'unavailable' | 'internal' | 'canceled';
+export interface Failure {
+	kind: FailureKind;
+	message: string;
+	correlationId?: string;
+	requestId?: string;
+}
+
+interface Props {
+	failure: Failure;
+	digest?: string;
+	title?: string;
+	retryHref?: string;
+	class?: string;
+}
+
+const { failure, digest, title, retryHref, class: className } = Astro.props;
+const redacted = Boolean(digest);
+const retryable = redacted || ['unauthenticated', 'timeout', 'unavailable', 'internal'].includes(failure.kind);
+const refs = [
+	digest ? ['digest', digest] : null,
+	failure.correlationId ? ['interaction', failure.correlationId] : null,
+	failure.requestId ? ['request', failure.requestId] : null,
+	!redacted ? ['kind', failure.kind] : null
+].filter((ref): ref is [string, string] => Boolean(ref));
+---
+
+<div class:list={['errorSurface', className]} role="alert">
+	<h2 class="errorTitle">{title ?? 'This did not load'}</h2>
+	<p class="errorBody">
+		{redacted
+			? 'Something went wrong on the server. The details are in its log — quote the reference below.'
+			: failure.message}
+	</p>
+	{refs.length > 0 && (
+		<dl class="errorRefs">
+			{refs.map(([label, value]) => (
+				<div class="errorRef">
+					<dt class="errorRefLabel">{label}</dt>
+					<dd class="errorRefValue">{value}</dd>
+				</div>
+			))}
+		</dl>
+	)}
+	<div class="errorActions">
+		{retryable && retryHref && <a class="errorRetry" href={retryHref}>Try again</a>}
+		<slot name="action" />
+	</div>
+	{!retryable && <p class="errorQuiet">Trying again will not change this — it is an answer, not a fault.</p>}
+</div>

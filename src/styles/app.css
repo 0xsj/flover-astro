@@ -1,9 +1,5 @@
 /* The composition entry. Keep the layer-order statement ahead of every
-   component stylesheet so reset/token/base cannot arrive behind primitives. */
-@import './layers.css';
-@import './reset.css';
-@import './tokens/index.css';
-@import './layout.css';
-@import './components.css';
-@import './forms.css';
-@import './base.css';
+   component stylesheet so reset/token/base cannot arrive behind primitives.
+   Concrete stylesheets are imported directly by BaseLayout.astro so the dev
+   server never has to resolve a nested local CSS import from this entry. */
+@layer reset, token, base, primitive, composition, screen, override;

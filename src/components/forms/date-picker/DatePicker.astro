@@ -1,0 +1,108 @@
+---
+import type { DateControlProps } from './date-value';
+import { calendarDate, dateConstraints } from './date-value';
+
+interface Props extends DateControlProps {
+	value?: string | null;
+	defaultValue?: string | null;
+	name?: string;
+}
+
+const {
+	label,
+	hint,
+	error,
+	required = false,
+	disabled = false,
+	readOnly = false,
+	id,
+	class: className,
+	form,
+	locale: _locale,
+	minDate,
+	maxDate,
+	unavailableDates = [],
+	value,
+	defaultValue,
+	name
+} = Astro.props;
+
+dateConstraints({ minDate, maxDate, unavailableDates });
+const controlId = id ?? `date-picker-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
+const errorId = `${controlId}-error`;
+const hintId = hint ? `${controlId}-hint` : undefined;
+const describedBy = [errorId, hintId].filter(Boolean).join(' ') || undefined;
+const selectedValue = value !== undefined ? value ?? '' : defaultValue ?? '';
+if (selectedValue) calendarDate(selectedValue);
+const initialUnavailable = selectedValue && unavailableDates.includes(selectedValue);
+---
+
+<div
+	class:list={['pickerField', className]}
+	data-astro-date-picker
+	data-static-error={error}
+	data-unavailable={JSON.stringify(unavailableDates)}
+>
+	<label class="pickerLabel" for={controlId}>
+		{label}
+		{required && <span class="pickerRequired" aria-hidden="true">*</span>}
+	</label>
+	<div class="dateControl">
+		<input
+			id={controlId}
+			type="date"
+			name={name}
+			form={form}
+			value={selectedValue}
+			min={minDate}
+			max={maxDate}
+			required={required}
+			readonly={readOnly}
+			disabled={disabled}
+			aria-describedby={describedBy}
+			aria-invalid={error || initialUnavailable ? 'true' : undefined}
+			data-date-input
+		/>
+		{selectedValue && !disabled && !readOnly && (
+			<button type="button" class="dateClear" aria-label={`Clear ${label}`} data-date-clear>×</button>
+		)}
+	</div>
+	<p id={errorId} class="pickerError" data-date-error hidden>{error ?? ''}</p>
+	{hint && <p id={hintId} class="pickerHint">{hint}</p>}
+</div>
+
+<script>
+	document.querySelectorAll<HTMLElement>('[data-astro-date-picker]').forEach((root) => {
+		const input = root.querySelector<HTMLInputElement>('[data-date-input]');
+		const clear = root.querySelector<HTMLButtonElement>('[data-date-clear]');
+		const error = root.querySelector<HTMLElement>('[data-date-error]');
+		if (!input || !error) return;
+		const unavailable = new Set(JSON.parse(root.dataset.unavailable ?? '[]') as string[]);
+		const staticError = root.dataset.staticError ?? '';
+
+		const update = () => {
+			const message = staticError || (input.value && unavailable.has(input.value) ? 'This date is unavailable.' : '');
+			input.setCustomValidity(message);
+			if (message) {
+				error.textContent = message;
+				error.hidden = false;
+				input.setAttribute('aria-invalid', 'true');
+			} else {
+				error.textContent = '';
+				error.hidden = true;
+				input.removeAttribute('aria-invalid');
+			}
+			if (clear) clear.hidden = !input.value;
+		};
+
+		input.addEventListener('input', update);
+		input.addEventListener('change', update);
+		clear?.addEventListener('click', () => {
+			input.value = '';
+			update();
+			input.focus();
+		});
+		input.form?.addEventListener('reset', () => window.setTimeout(update, 0));
+		update();
+	});
+</script>

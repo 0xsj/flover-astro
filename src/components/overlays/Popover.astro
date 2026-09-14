@@ -1,0 +1,18 @@
+---
+interface Props {
+	defaultOpen?: boolean;
+	class?: string;
+	id?: string;
+}
+
+const { defaultOpen = false, class: className, id } = Astro.props;
+---
+
+<div id={id} class:list={['popoverRoot', className]} data-astro-popover data-popover-default-open={defaultOpen ? 'true' : undefined}>
+	<slot />
+</div>
+
+<script>
+	import { initPopovers } from '../../lib/overlays/runtime';
+	initPopovers();
+</script>

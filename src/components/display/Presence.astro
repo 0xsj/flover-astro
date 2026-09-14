@@ -1,0 +1,19 @@
+---
+import { PRESENCE_MEANING, PRESENCE_WORD, type PresenceValue } from './presence';
+
+interface Props {
+	of: PresenceValue;
+	class?: string;
+}
+
+const { of, class: className } = Astro.props;
+const hasFoundSlot = Astro.slots.has('default');
+---
+
+{of.state === 'found' ? (
+	hasFoundSlot ? <slot /> : <span>{String(of.value)}</span>
+) : of.state === 'empty' ? (
+	<span class:list={['displayPresenceAbsent', className]} title={PRESENCE_MEANING.empty}>{PRESENCE_WORD.empty}</span>
+) : (
+	<span class:list={['displayPresenceUnmeasured', className]} title={PRESENCE_MEANING.unmeasured}>{PRESENCE_WORD.unmeasured}</span>
+)}

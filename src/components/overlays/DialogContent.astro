@@ -1,0 +1,44 @@
+---
+import DialogClose from './DialogClose.astro';
+
+interface Props {
+	title: string;
+	description?: string;
+	hideTitle?: boolean;
+	closeLabel?: string;
+	class?: string;
+	id?: string;
+}
+
+const {
+	title,
+	description,
+	hideTitle = false,
+	closeLabel = 'Close',
+	class: className,
+	id = 'astro-dialog-content'
+} = Astro.props;
+---
+
+<div class="overlayLayer" data-dialog-layer hidden>
+	<div class="overlayScrim" data-dialog-scrim aria-hidden="true"></div>
+	<section
+		id={id}
+		class:list={['overlayPanel', className]}
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
+		data-dialog-panel
+	>
+		<div class="overlayHead">
+			<div>
+				<h2 class:list={['overlayTitle', hideTitle && 'visuallyHidden']} id={`${id}-title`} data-dialog-title>{title}</h2>
+				{description && <p class="overlayDescription" id={`${id}-description`} data-dialog-description>{description}</p>}
+			</div>
+			<DialogClose class="overlayClose">
+				<button type="button" aria-label={closeLabel}><span aria-hidden="true">×</span></button>
+			</DialogClose>
+		</div>
+		<div class="overlayBody"><slot /></div>
+	</section>
+</div>

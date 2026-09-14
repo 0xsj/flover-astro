@@ -1,11 +1,28 @@
 ---
+import { Button } from '../components/forms';
+import Container from '../components/layout/Container.astro';
+import Flex from '../components/layout/Flex.astro';
+import Heading from '../components/typography/Heading.astro';
+import Text from '../components/typography/Text.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import '../styles/landing.css';
 ---
 
-<BaseLayout>
-	<main>
-		<h1>flover-astro</h1>
-		<p>The Astro port is taking shape one vertical slice at a time.</p>
-		<a href="/kitchen-sink">Open the kitchen sink</a>
+<BaseLayout
+	title="flover-astro · Astro template"
+	description="An opinionated Astro starter with a composable design system, clear layers, and thoughtful error handling."
+>
+	<main class="landing">
+		<Container width="measure" class="landingContent">
+			<Text size="sm" tone="muted" class="landingEyebrow">Astro template</Text>
+			<Heading level={1} size="xl" class="landingTitle">flover-astro</Heading>
+			<Text size="lg" tone="muted" class="landingDescription">An opinionated starter with a composable design system, clear layers, and thoughtful error handling. A foundation for your next product.</Text>
+			<nav aria-label="Start exploring" class="landingNavigation">
+				<Flex gap={4} wrap class="landingActions">
+					<Button href="/kitchen-sink" intent="primary" size="lg">Explore the kitchen sink <span aria-hidden="true">↗</span></Button>
+					<Button href="/kitchen-sink/tokens" size="lg">Browse the token catalog</Button>
+				</Flex>
+			</nav>
+		</Container>
 	</main>
 </BaseLayout>

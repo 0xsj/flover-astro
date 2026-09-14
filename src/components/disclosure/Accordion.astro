@@ -1,0 +1,91 @@
+---
+interface Props {
+	type?: 'single' | 'multiple';
+	defaultValue?: string | string[];
+	collapsible?: boolean;
+	class?: string;
+}
+
+const { type = 'single', defaultValue, collapsible = false, class: className } = Astro.props;
+---
+
+<div
+	class:list={['accordion', className]}
+	data-astro-accordion
+	data-accordion-type={type}
+	data-accordion-default={JSON.stringify(defaultValue ?? (type === 'single' ? null : []))}
+	data-accordion-collapsible={collapsible ? 'true' : 'false'}
+>
+	<slot />
+</div>
+
+<script>
+	document.querySelectorAll<HTMLElement>('[data-astro-accordion]').forEach((root, rootIndex) => {
+		const items = [...root.querySelectorAll<HTMLElement>('[data-accordion-item]')];
+		if (!items.length) return;
+		const enabledItems = () => items.filter((item) => item.dataset.disabled !== 'true');
+		const prefix = root.id || `astro-accordion-${rootIndex}`;
+		const selected = new Set<string>();
+		const initial = JSON.parse(root.dataset.accordionDefault ?? 'null') as string | string[] | null;
+		(Array.isArray(initial) ? initial : initial ? [initial] : []).forEach((value) => selected.add(value));
+
+		items.forEach((item) => {
+			const value = item.dataset.accordionValue ?? '';
+			const trigger = item.querySelector<HTMLButtonElement>('[data-accordion-trigger]');
+			const content = item.querySelector<HTMLElement>('[data-accordion-content]');
+			if (!trigger || !content) return;
+			trigger.id ||= `${prefix}-${value}-trigger`;
+			content.id ||= `${prefix}-${value}-content`;
+			trigger.setAttribute('aria-controls', content.id);
+			content.setAttribute('aria-labelledby', trigger.id);
+		});
+
+		const sync = () => {
+			if (root.dataset.accordionType === 'single' && selected.size > 1) {
+				const last = [...selected].at(-1);
+				selected.clear();
+				if (last) selected.add(last);
+			}
+			items.forEach((item) => {
+				const open = selected.has(item.dataset.accordionValue ?? '');
+				const trigger = item.querySelector<HTMLButtonElement>('[data-accordion-trigger]');
+				const content = item.querySelector<HTMLElement>('[data-accordion-content]');
+				item.dataset.state = open ? 'open' : 'closed';
+				trigger?.setAttribute('aria-expanded', String(open));
+				if (content) {
+					content.hidden = !open;
+					content.dataset.state = open ? 'open' : 'closed';
+				}
+			});
+		};
+		const toggle = (item: HTMLElement) => {
+			if (item.dataset.disabled === 'true') return;
+			const value = item.dataset.accordionValue ?? '';
+			if (root.dataset.accordionType === 'single') {
+				if (selected.has(value) && root.dataset.accordionCollapsible === 'true') selected.delete(value);
+				else { selected.clear(); selected.add(value); }
+			} else if (selected.has(value)) selected.delete(value);
+			else selected.add(value);
+			sync();
+		};
+
+		items.forEach((item) => {
+			const trigger = item.querySelector<HTMLButtonElement>('[data-accordion-trigger]');
+			trigger?.addEventListener('click', () => toggle(item));
+			trigger?.addEventListener('keydown', (event) => {
+				const choices = enabledItems().map((entry) => entry.querySelector<HTMLButtonElement>('[data-accordion-trigger]')).filter((entry): entry is HTMLButtonElement => Boolean(entry));
+				const index = choices.indexOf(trigger);
+				let nextIndex: number | undefined;
+				if (event.key === 'ArrowDown' || event.key === 'ArrowRight') nextIndex = (index + 1) % choices.length;
+				if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') nextIndex = (index - 1 + choices.length) % choices.length;
+				if (event.key === 'Home') nextIndex = 0;
+				if (event.key === 'End') nextIndex = choices.length - 1;
+				if (nextIndex !== undefined && choices[nextIndex]) {
+					event.preventDefault();
+					choices[nextIndex].focus();
+				}
+			});
+		});
+		sync();
+	});
+</script>

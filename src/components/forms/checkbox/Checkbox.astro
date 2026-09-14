@@ -1,0 +1,42 @@
+---
+interface Props {
+	checked?: boolean;
+	indeterminate?: boolean;
+	disabled?: boolean;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { checked = false, indeterminate = false, disabled = false, class: className, ...rest } = Astro.props;
+const state = indeterminate ? 'indeterminate' : checked ? 'checked' : 'unchecked';
+---
+
+<input
+	{...rest}
+	type="checkbox"
+	checked={checked && !indeterminate}
+	disabled={disabled}
+	class:list={['checkbox', className]}
+	data-astro-checkbox=""
+	data-state={state}
+	aria-checked={indeterminate ? 'mixed' : String(checked)}
+/> 
+
+<script>
+	const syncCheckboxes = () => {
+		document.querySelectorAll<HTMLInputElement>('input[data-astro-checkbox]').forEach((checkbox) => {
+			if (checkbox.dataset.state === 'indeterminate') checkbox.indeterminate = true;
+
+			const sync = () => {
+				const nextState = checkbox.indeterminate ? 'indeterminate' : checkbox.checked ? 'checked' : 'unchecked';
+				checkbox.dataset.state = nextState;
+				checkbox.setAttribute('aria-checked', checkbox.indeterminate ? 'mixed' : String(checkbox.checked));
+			};
+
+			sync();
+			checkbox.addEventListener('change', sync);
+		});
+	};
+
+	syncCheckboxes();
+</script>

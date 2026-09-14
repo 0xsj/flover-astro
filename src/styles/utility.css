@@ -1,0 +1,7 @@
+@layer primitive {
+	.icon { display: inline-block; flex: none; vertical-align: middle; }
+	.iconLoader { animation: utilitySpin 0.9s linear infinite; }
+	@keyframes utilitySpin { to { transform: rotate(360deg); } }
+	.accessibleIcon { display: inline-flex; align-items: center; }
+	.portalPlaceholder { display: contents; }
+}

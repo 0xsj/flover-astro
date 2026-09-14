@@ -1,0 +1,78 @@
+---
+import { Breadcrumb, BreadcrumbCurrent, BreadcrumbLink, NavLink, Pagination, Tab, TabPanel, Tabs, TabsList } from '../../components/navigation';
+import { Badge } from '../../components/display';
+import Case from '../../components/kitchen-sink/Case.astro';
+import Section from '../../components/kitchen-sink/Section.astro';
+import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
+import navigationDoc from '../../components/navigation/doc.ts?raw';
+import breadcrumbSource from '../../components/navigation/Breadcrumb.astro?raw';
+import breadcrumbLinkSource from '../../components/navigation/BreadcrumbLink.astro?raw';
+import breadcrumbCurrentSource from '../../components/navigation/BreadcrumbCurrent.astro?raw';
+import navLinkSource from '../../components/navigation/NavLink.astro?raw';
+import tabsSource from '../../components/navigation/Tabs.astro?raw';
+import tabsListSource from '../../components/navigation/TabsList.astro?raw';
+import tabSource from '../../components/navigation/Tab.astro?raw';
+import tabPanelSource from '../../components/navigation/TabPanel.astro?raw';
+import tabsDoc from '../../components/navigation/tabs.doc.ts?raw';
+import paginationSource from '../../components/navigation/Pagination.astro?raw';
+import pagesSource from '../../components/navigation/pages.ts?raw';
+import paginationDoc from '../../components/navigation/pagination.doc.ts?raw';
+
+const breadcrumbSourceText = `${breadcrumbSource}\n\n${breadcrumbLinkSource}\n\n${breadcrumbCurrentSource}\n\n${navigationDoc}`;
+const navLinkSourceText = `${navLinkSource}\n\n${navigationDoc}`;
+const tabsSourceText = `${tabsSource}\n\n${tabsListSource}\n\n${tabSource}\n\n${tabPanelSource}\n\n${tabsDoc}`;
+const paginationSourceText = `${paginationSource}\n\n${pagesSource}\n\n${paginationDoc}`;
+const pageHref = (page: number) => `#page-${page}`;
+---
+
+<KitchenSinkLayout title="Navigation · flover-astro" description="The flover-astro navigation primitive catalog.">
+	<Section id="navigation" title="Navigation" blurb="Moving between places, and saying which place you are in. Every one of these has a keyboard contract that is easy to omit and invisible once omitted — and all four style themselves from aria-current or a reported state, so nothing can look current without saying it is.">
+		<Case title="NavLink" note="active is a prop; the component does not read the route" source={['src/components/navigation/NavLink.astro', 'src/components/navigation/doc.ts']}>
+			<div class="navExample">
+				<NavLink href="#navigation" active>Targets</NavLink>
+				<NavLink href="#navigation">Findings</NavLink>
+				<NavLink href="#navigation">Settings</NavLink>
+			</div>
+			<p class="limits"><code>aria-current="page"</code> is the whole value, and it is what gets forgotten. The styling keys off that attribute, so a link cannot look current without saying it is. Astro leaves route matching to the caller.</p>
+			<pre slot="source" class="code"><code>{navLinkSourceText}</code></pre>
+		</Case>
+		<Case title="Breadcrumb" note="the last crumb is not a link" source={['src/components/navigation/Breadcrumb.astro', 'src/components/navigation/BreadcrumbLink.astro', 'src/components/navigation/BreadcrumbCurrent.astro', 'src/components/navigation/doc.ts']}>
+			<Breadcrumb>
+				<BreadcrumbLink href="#navigation">Home</BreadcrumbLink>
+				<BreadcrumbLink href="#navigation">Targets</BreadcrumbLink>
+				<BreadcrumbCurrent>api.example.com</BreadcrumbCurrent>
+			</Breadcrumb>
+			<p class="limits">A link to the page already being read is a control that does nothing. The current page is a span carrying <code>aria-current</code>; separators are real elements with <code>aria-hidden</code> rather than generated content.</p>
+			<pre slot="source" class="code"><code>{breadcrumbSourceText}</code></pre>
+		</Case>
+		<Case title="Tabs" note="automatic activation, with manual available for expensive panels" source={['src/components/navigation/Tabs.astro', 'src/components/navigation/TabsList.astro', 'src/components/navigation/Tab.astro', 'src/components/navigation/TabPanel.astro', 'src/components/navigation/tabs.doc.ts']}>
+			<div class="controlExample">
+				<Tabs id="target-tabs" defaultValue="overview">
+					<TabsList>
+						<Tab value="overview">Overview</Tab>
+						<Tab value="findings">Findings <Badge tone="crit">3</Badge></Tab>
+						<Tab value="history">History</Tab>
+						<Tab value="archived" disabled>Archived</Tab>
+					</TabsList>
+					<TabPanel value="overview">Arrowing here shows this panel immediately.</TabPanel>
+					<TabPanel value="findings">Three findings on this target.</TabPanel>
+					<TabPanel value="history">Nothing has changed in ninety days.</TabPanel>
+					<TabPanel value="archived">This panel is unavailable.</TabPanel>
+				</Tabs>
+				<Tabs id="cost-tabs" defaultValue="cheap" activationMode="manual">
+					<TabsList><Tab value="cheap">Cheap</Tab><Tab value="costly">Costly</Tab><Tab value="also">Also costly</Tab></TabsList>
+					<TabPanel value="cheap">Arrow to the next tab: focus moves, this panel stays.</TabPanel>
+					<TabPanel value="costly">Committed with Enter.</TabPanel>
+					<TabPanel value="also">Committed with Enter.</TabPanel>
+				</Tabs>
+			</div>
+			<p class="limits">The strip is one tab stop with arrows inside it. Automatic activation is the default; use <code>activationMode="manual"</code> when opening a panel performs a fetch or heavy render. The Astro script connects slotted tabs and panels after the server render.</p>
+			<pre slot="source" class="code"><code>{tabsSourceText}</code></pre>
+		</Case>
+		<Case title="Pagination" note="bounded page window with route-owned links" source={['src/components/navigation/Pagination.astro', 'src/components/navigation/pages.ts', 'src/components/navigation/pagination.doc.ts']}>
+			<Pagination page={7} totalPages={24} hrefForPage={pageHref} />
+			<p class="limits">Pages are one-based. Previous and next stop at their boundaries; first, last, and nearby pages stay reachable. Pagination emits links so the route layer owns the URL and data change, while the pure page window stays bounded.</p>
+			<pre slot="source" class="code"><code>{paginationSourceText}</code></pre>
+		</Case>
+	</Section>
+</KitchenSinkLayout>

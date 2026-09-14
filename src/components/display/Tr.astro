@@ -1,0 +1,11 @@
+---
+interface Props {
+	selected?: boolean;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { selected = false, class: className, ...rest } = Astro.props;
+---
+
+<tr {...rest} class:list={['displayTableRow', className]} data-selected={selected ? '' : undefined}><slot /></tr>

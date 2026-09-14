@@ -1,0 +1,17 @@
+---
+import Icon from './Icon.astro';
+import type { IconName } from './Icon.astro';
+
+interface Props {
+	label: string;
+	name: IconName;
+	size?: number | string;
+	class?: string;
+}
+
+const { label, name, size = 16, class: className } = Astro.props;
+---
+
+<span class:list={['accessibleIcon', className]} role="img" aria-label={label}>
+	<Icon name={name} size={size} aria-hidden="true" focusable="false" />
+</span>

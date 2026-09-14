@@ -1,0 +1,147 @@
+---
+import { Combobox, DatePicker, DateRangePicker, MultiSelect, type ChoiceOption } from '../../components/forms';
+import Case from '../../components/kitchen-sink/Case.astro';
+import Section from '../../components/kitchen-sink/Section.astro';
+import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
+import comboboxSource from '../../components/forms/combobox/Combobox.astro?raw';
+import comboboxDoc from '../../components/forms/combobox/doc.ts?raw';
+import multiSelectSource from '../../components/forms/combobox/MultiSelect.astro?raw';
+import datePickerSource from '../../components/forms/date-picker/DatePicker.astro?raw';
+import dateRangePickerSource from '../../components/forms/date-range-picker/DateRangePicker.astro?raw';
+import dateDoc from '../../components/forms/date-picker/doc.ts?raw';
+
+const people: readonly ChoiceOption[] = [
+	{ value: 'ada', label: 'Ada Lovelace', description: 'Platform engineering' },
+	{ value: 'grace', label: 'Grace Hopper', description: 'Developer experience' },
+	{ value: 'margaret', label: 'Margaret Hamilton', description: 'Reliability' },
+	{ value: 'katherine', label: 'Katherine Johnson', description: 'Research' },
+	{ value: 'alan', label: 'Alan Turing', description: 'Unavailable for assignment', disabled: true }
+];
+const comboboxSourceText = `${comboboxSource}\n\n${comboboxDoc}`;
+const multiSelectSourceText = `${multiSelectSource}\n\n${comboboxDoc}`;
+const datePickerSourceText = `${datePickerSource}\n\n${dateDoc}`;
+const dateRangePickerSourceText = `${dateRangePickerSource}\n\n${dateDoc}`;
+const unavailableSeptember = ['2026-09-18', '2026-09-19'];
+---
+
+<KitchenSinkLayout title="Pickers · flover-astro" description="The flover-astro picker primitive catalog.">
+	<Section id="pickers" title="Pickers" blurb="Searchable choices and calendar dates, with labelled fields, keyboard interaction, and ordinary form values. The first Astro slice ports the single-value combobox; multi-select and calendar controls follow. ">
+		<Case title="Combobox" note="one selected ID; search text is temporary" source={['src/components/forms/combobox/Combobox.astro', 'src/components/forms/combobox/doc.ts']}>
+			<div class="controlExample">
+				<Combobox
+					id="project-owner"
+					label="Project owner"
+					name="owner"
+					options={people}
+					defaultValue="ada"
+					hint="Search by name. Arrow keys explore; Enter selects."
+				/>
+				<Combobox
+					id="reviewer"
+					label="Reviewer"
+					options={people}
+					placeholder="Find a reviewer…"
+					hint="An uncontrolled, optional choice."
+				/>
+			</div>
+			<p class="limits">
+				The visible text is a temporary query; the hidden control submits the
+				stable option ID. Disabled options remain visible so the reason they
+				cannot be chosen is discoverable. Empty options and no matches get their
+				own announced list state.
+			</p>
+			<pre slot="source" class="code"><code>{comboboxSourceText}</code></pre>
+		</Case>
+		<Case title="MultiSelect" note="selected values remain visible while searching" source={['src/components/forms/combobox/MultiSelect.astro', 'src/components/forms/combobox/doc.ts']}>
+			<div class="controlExample">
+				<MultiSelect
+					id="project-topics"
+					label="Project topics"
+					name="topic"
+					options={[
+						{ value: 'design', label: 'Design systems' },
+						{ value: 'platform', label: 'Platform' },
+						{ value: 'research', label: 'Research' },
+						{ value: 'accessibility', label: 'Accessibility' },
+						{ value: 'observability', label: 'Observability' },
+						{ value: 'security', label: 'Security and identity' }
+					]}
+					defaultValue={['design', 'accessibility']}
+					hint="Search to add topics. Selected topics remain below the input."
+				/>
+			</div>
+			<p class="limits">
+				Selected values stay visible while the query filters the list. Each
+				selection becomes a repeated form key, so the submitted shape is
+				<code>topic=design&amp;topic=accessibility</code>, never the search text.
+			</p>
+			<pre slot="source" class="code"><code>{multiSelectSourceText}</code></pre>
+		</Case>
+		<Case title="DatePicker" note="a calendar date with no implied time zone" source={['src/components/forms/date-picker/DatePicker.astro', 'src/components/forms/date-picker/doc.ts']}>
+			<div class="controlExample">
+				<DatePicker
+					id="due-date"
+					label="Due date"
+					name="dueDate"
+					defaultValue="2026-09-10"
+					hint="Choose from the browser calendar or type the date. Stored as YYYY-MM-DD."
+				/>
+				<DatePicker
+					id="september-date"
+					label="September appointment"
+					defaultValue="2026-09-18"
+					minDate="2026-09-01"
+					maxDate="2026-09-30"
+					unavailableDates={unavailableSeptember}
+					hint="The 18th and 19th are unavailable."
+				/>
+			</div>
+			<p class="limits">
+				The native date input owns typed segments, calendar opening, keyboard
+				movement, and ISO form serialization. Astro adds the sibling validation
+				boundary without converting the date through a JavaScript timestamp.
+			</p>
+			<pre slot="source" class="code"><code>{datePickerSourceText}</code></pre>
+		</Case>
+		<Case title="DateRangePicker" note="a complete, inclusive start and end" source={['src/components/forms/date-range-picker/DateRangePicker.astro', 'src/components/forms/date-picker/doc.ts']}>
+			<div class="controlExample">
+				<DateRangePicker
+					id="reporting-period"
+					label="Reporting period"
+					startName="startDate"
+					endName="endDate"
+					defaultValue={{ start: '2026-09-10', end: '2026-09-14' }}
+					hint="Both endpoints are inclusive. Choose a start, then an end."
+				/>
+				<DateRangePicker
+					id="booking-window"
+					label="Booking window"
+					defaultValue={{ start: '2026-09-10', end: '2026-09-19' }}
+					minDate="2026-09-01"
+					maxDate="2026-09-30"
+					unavailableDates={['2026-09-18']}
+					hint="A booking cannot cross the unavailable 18th."
+				/>
+			</div>
+			<p class="limits">
+				A range is one compound value, but ordinary HTML submission uses two
+				caller-named date fields. A partial range and a reversed range stay
+				editable while the field reports why it cannot be submitted.
+			</p>
+			<pre slot="source" class="code"><code>{dateRangePickerSourceText}</code></pre>
+		</Case>
+		<Case title="Date states and form values" note="disabled, read-only, required, bounds, and reset">
+			<div class="fieldGrid">
+				<DatePicker id="disabled-date" label="Disabled date" defaultValue="2026-09-10" disabled />
+				<DatePicker id="readonly-date" label="Read-only date" value="2026-09-10" readOnly />
+				<DateRangePicker id="disabled-period" label="Disabled period" defaultValue={{ start: '2026-09-10', end: '2026-09-12' }} disabled />
+				<DateRangePicker id="readonly-period" label="Read-only period" value={{ start: '2026-09-10', end: '2026-09-12' }} readOnly />
+			</div>
+			<p class="limits">
+				A disabled date is unavailable and does not submit; a read-only date
+				remains readable, focusable, and submitted. Reset is left to the native
+				form algorithm, with the small script restoring custom validity afterward.
+			</p>
+		</Case>
+	</Section>
+</KitchenSinkLayout>

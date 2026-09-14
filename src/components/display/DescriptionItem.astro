@@ -1,0 +1,14 @@
+---
+interface Props {
+	term: string;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { term, class: className, ...rest } = Astro.props;
+---
+
+<div {...rest} class:list={['displayDescriptionItem', className]}>
+	<dt class="displayDescriptionTerm">{term}</dt>
+	<dd class="displayDescriptionValue"><slot /></dd>
+</div>

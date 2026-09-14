@@ -1,0 +1,292 @@
+---
+import type { ChoiceOption } from './Combobox.astro';
+
+interface Props {
+	label: string;
+	options: readonly ChoiceOption[];
+	value?: readonly string[];
+	defaultValue?: readonly string[];
+	placeholder?: string;
+	name?: string;
+	id?: string;
+	hint?: string;
+	error?: string;
+	required?: boolean;
+	disabled?: boolean;
+	readOnly?: boolean;
+	emptyMessage?: string;
+	class?: string;
+}
+
+const {
+	label,
+	options,
+	value,
+	defaultValue,
+	placeholder = 'Search options…',
+	name,
+	id,
+	hint,
+	error,
+	required = false,
+	disabled = false,
+	readOnly = false,
+	emptyMessage,
+	class: className
+} = Astro.props;
+
+const controlId = id ?? `multi-select-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
+const listId = `${controlId}-list`;
+const hintId = hint ? `${controlId}-hint` : undefined;
+const errorId = error ? `${controlId}-error` : undefined;
+const describedBy = [errorId, hintId].filter(Boolean).join(' ') || undefined;
+const selectedValues = value !== undefined ? [...value] : [...(defaultValue ?? [])];
+---
+
+<div
+	class:list={['pickerField', className]}
+	data-astro-multiselect
+	data-error={error ? 'true' : undefined}
+	data-empty-message={emptyMessage}
+	data-form-name={name}
+>
+	<label class="pickerLabel" for={controlId}>
+		{label}
+		{required && <span class="pickerRequired" aria-hidden="true">*</span>}
+	</label>
+	<div class="combobox">
+		<input
+			id={controlId}
+			type="text"
+			role="combobox"
+			placeholder={placeholder}
+			autocomplete="off"
+			aria-autocomplete="list"
+			aria-expanded="false"
+			aria-controls={listId}
+			aria-describedby={describedBy}
+			aria-invalid={error ? 'true' : undefined}
+			required={required && selectedValues.length === 0}
+			readonly={readOnly}
+			disabled={disabled}
+			data-multiselect-input
+		/>
+		<button
+			type="button"
+			class="comboboxButton"
+			aria-label={`Show options for ${label}`}
+			disabled={disabled || readOnly}
+			data-multiselect-toggle
+		>⌄</button>
+		<div data-multiselect-values>
+			{selectedValues.map((selectedValue) => (
+				<input type="hidden" name={name} value={selectedValue} data-multi-value data-value={selectedValue} disabled={disabled} />
+			))}
+		</div>
+		<ul id={listId} class="comboboxList" role="listbox" aria-multiselectable="true" hidden>
+			{options.map((option) => (
+				<li
+					class="comboboxOption"
+					role="option"
+					data-value={option.value}
+					data-label={option.label}
+					aria-selected={selectedValues.includes(option.value) ? 'true' : 'false'}
+					aria-disabled={option.disabled ? 'true' : undefined}
+				>
+					<span class="comboboxOptionText">
+						<strong>{option.label}</strong>
+						{option.description && <small>{option.description}</small>}
+					</span>
+				</li>
+			))}
+			<li class="pickerEmpty" role="presentation" data-multiselect-empty hidden>
+				{emptyMessage ?? (options.length ? 'No matching options.' : 'No options available.')}
+			</li>
+		</ul>
+	</div>
+	<div class="multiTags" role="list" aria-label={`Selected ${label}`} data-multiselect-tags>
+		{selectedValues.map((selectedValue) => {
+			const option = options.find((entry) => entry.value === selectedValue);
+			return (
+				<div class="multiTag" role="listitem" data-value={selectedValue}>
+					<span>{option?.label ?? selectedValue}</span>
+					{!disabled && !readOnly && <button type="button" class="multiRemove" aria-label={`Remove ${option?.label ?? selectedValue}`} data-remove-value={selectedValue}>×</button>}
+				</div>
+			);
+		})}
+	</div>
+	{error && <p id={errorId} class="pickerError">{error}</p>}
+	{hint && <p id={hintId} class="pickerHint">{hint}</p>}
+</div>
+
+<script>
+	document.querySelectorAll<HTMLElement>('[data-astro-multiselect]').forEach((root) => {
+		const input = root.querySelector<HTMLInputElement>('[data-multiselect-input]');
+		const hiddenValues = root.querySelector<HTMLElement>('[data-multiselect-values]');
+		const tags = root.querySelector<HTMLElement>('[data-multiselect-tags]');
+		const list = root.querySelector<HTMLUListElement>('[role="listbox"]');
+		const toggle = root.querySelector<HTMLButtonElement>('[data-multiselect-toggle]');
+		const empty = root.querySelector<HTMLElement>('[data-multiselect-empty]');
+		const options = [...root.querySelectorAll<HTMLElement>('[role="option"]')];
+		if (!input || !hiddenValues || !tags || !list) return;
+
+		const selected = new Set(
+			[...root.querySelectorAll<HTMLInputElement>('[data-multi-value]')].map((field) => field.value)
+		);
+		const initialValues = [...selected];
+		let activeIndex = -1;
+
+		const visibleOptions = () => options.filter((option) => !option.hidden && option.getAttribute('aria-disabled') !== 'true');
+		const setValidity = () => {
+			input.required = root.dataset.error !== 'true' && !input.disabled && !input.readOnly && input.dataset.required === 'true' && selected.size === 0;
+			input.setCustomValidity(input.required ? 'Choose at least one option.' : '');
+		};
+		const setActive = (index: number) => {
+			const choices = visibleOptions();
+			choices.forEach((option) => option.removeAttribute('data-active'));
+			activeIndex = choices.length ? (index + choices.length) % choices.length : -1;
+			const active = activeIndex >= 0 ? choices[activeIndex] : undefined;
+			if (!active) {
+				input.removeAttribute('aria-activedescendant');
+				return;
+			}
+			active.id ||= `${input.id}-option-${active.dataset.value}`;
+			active.dataset.active = '';
+			input.setAttribute('aria-activedescendant', active.id);
+		};
+		const render = (query: string) => {
+			const needle = query.trim().toLocaleLowerCase();
+			let matches = 0;
+			options.forEach((option) => {
+				const haystack = `${option.dataset.label ?? ''} ${option.textContent ?? ''}`.toLocaleLowerCase();
+				const matchesQuery = !needle || haystack.includes(needle);
+				option.hidden = !matchesQuery;
+				if (matchesQuery) matches += 1;
+				option.setAttribute('aria-selected', selected.has(option.dataset.value ?? '') ? 'true' : 'false');
+			});
+			if (empty) {
+				empty.hidden = matches > 0;
+				empty.textContent = needle
+					? (root.dataset.emptyMessage ?? 'No matching options.')
+					: (options.length ? 'No matching options.' : 'No options available.');
+			}
+			setActive(-1);
+		};
+		const open = () => {
+			if (input.disabled || input.readOnly) return;
+			render(input.value);
+			list.hidden = false;
+			input.setAttribute('aria-expanded', 'true');
+		};
+		const close = () => {
+			input.value = '';
+			list.hidden = true;
+			input.setAttribute('aria-expanded', 'false');
+			input.removeAttribute('aria-activedescendant');
+			options.forEach((option) => {
+				option.hidden = false;
+				option.removeAttribute('data-active');
+			});
+			activeIndex = -1;
+		};
+		const syncSelection = () => {
+			hiddenValues.replaceChildren();
+			const fieldName = root.dataset.formName;
+			[...selected].forEach((value) => {
+				const field = document.createElement('input');
+				field.type = 'hidden';
+				if (fieldName) field.name = fieldName;
+				field.value = value;
+				field.disabled = input.disabled;
+				field.dataset.multiValue = '';
+				field.dataset.value = value;
+				hiddenValues.append(field);
+			});
+			tags.replaceChildren();
+			[...selected].forEach((value) => {
+				const option = options.find((entry) => entry.dataset.value === value);
+				const tag = document.createElement('div');
+				tag.className = 'multiTag';
+				tag.setAttribute('role', 'listitem');
+				tag.dataset.value = value;
+				const text = document.createElement('span');
+				text.textContent = option?.dataset.label ?? value;
+				tag.append(text);
+				if (!input.disabled && !input.readOnly) {
+					const remove = document.createElement('button');
+					remove.type = 'button';
+					remove.className = 'multiRemove';
+					remove.setAttribute('aria-label', `Remove ${option?.dataset.label ?? value}`);
+					remove.dataset.removeValue = value;
+					remove.textContent = '×';
+					tag.append(remove);
+				}
+				tags.append(tag);
+			});
+			setValidity();
+			render(input.value);
+			input.dispatchEvent(new Event('change', { bubbles: true }));
+		};
+		const toggleOption = (option: HTMLElement) => {
+			if (option.getAttribute('aria-disabled') === 'true' || input.disabled || input.readOnly) return;
+			const value = option.dataset.value;
+			if (!value) return;
+			if (selected.has(value)) selected.delete(value);
+			else selected.add(value);
+			syncSelection();
+			input.focus();
+		};
+
+		input.dataset.required = root.querySelector('.pickerRequired') ? 'true' : 'false';
+		input.addEventListener('focus', open);
+		input.addEventListener('input', open);
+		input.addEventListener('keydown', (event) => {
+			const choices = visibleOptions();
+			if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+				event.preventDefault();
+				open();
+				setActive(activeIndex + (event.key === 'ArrowDown' ? 1 : -1));
+				return;
+			}
+			if (event.key === 'Enter' && !list.hidden && activeIndex >= 0 && choices[activeIndex]) {
+				event.preventDefault();
+				toggleOption(choices[activeIndex]);
+				return;
+			}
+			if (event.key === 'Escape') {
+				event.preventDefault();
+				close();
+			}
+		});
+		toggle?.addEventListener('click', () => {
+			if (list.hidden) open();
+			else close();
+		});
+		options.forEach((option) => {
+			option.addEventListener('mousedown', (event) => event.preventDefault());
+			option.addEventListener('click', () => toggleOption(option));
+		});
+		tags.addEventListener('click', (event) => {
+			const target = event.target instanceof Element ? event.target.closest<HTMLButtonElement>('[data-remove-value]') : null;
+			const value = target?.dataset.removeValue;
+			if (!target || !value || input.disabled || input.readOnly) return;
+			selected.delete(value);
+			syncSelection();
+			input.focus();
+		});
+		document.addEventListener('click', (event) => {
+			if (event.target instanceof Node && !root.contains(event.target)) close();
+		});
+		const form = root.closest('form');
+		form?.addEventListener('reset', () => {
+			window.setTimeout(() => {
+				selected.clear();
+				initialValues.forEach((value) => selected.add(value));
+				syncSelection();
+				close();
+			}, 0);
+		});
+		syncSelection();
+		close();
+	});
+</script>

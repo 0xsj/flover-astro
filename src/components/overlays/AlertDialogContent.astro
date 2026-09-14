@@ -1,0 +1,30 @@
+---
+interface Props {
+	title: string;
+	description: string;
+	class?: string;
+	id?: string;
+}
+
+const { title, description, class: className, id = 'astro-alert-dialog-content' } = Astro.props;
+---
+
+<div class="overlayLayer" data-alert-dialog-layer hidden>
+	<div class="overlayScrim" aria-hidden="true"></div>
+	<section
+		id={id}
+		class:list={['overlayPanel', className]}
+		role="alertdialog"
+		aria-modal="true"
+		tabindex="-1"
+		data-alert-dialog-panel
+	>
+		<div class="overlayHead">
+			<div>
+				<h2 class="overlayTitle" id={`${id}-title`} data-alert-dialog-title>{title}</h2>
+				<p class="overlayDescription" id={`${id}-description`} data-alert-dialog-description>{description}</p>
+			</div>
+		</div>
+		<div class="overlayFooter"><slot /></div>
+	</section>
+</div>

@@ -1,0 +1,12 @@
+@layer primitive {
+	.accordion { inline-size: 100%; }
+	.accordionItem { border-block-end: 1px solid var(--line); }
+	.accordionHeading { margin: 0; }
+	.accordionTrigger { display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); inline-size: 100%; min-block-size: var(--control-lg); padding: var(--space-6) var(--space-2); color: var(--ink); font-size: var(--text-13); font-weight: var(--weight-strong); text-align: start; }
+	.accordionTrigger:hover { color: var(--accent); }
+	.accordionTrigger:disabled { color: var(--ink-4); cursor: not-allowed; }
+	.accordionChevron { flex: none; color: var(--ink-3); transition: transform var(--dur-1) var(--ease); }
+	.accordionItem[data-state='open'] .accordionChevron { transform: rotate(180deg); }
+	.accordionContent { overflow: hidden; color: var(--ink-2); font-size: var(--text-12-5); line-height: var(--leading-body); }
+	.accordionInner { padding: 0 var(--space-2) var(--space-7); }
+}

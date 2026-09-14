@@ -1,0 +1,27 @@
+---
+import VisuallyHidden from '../utility/VisuallyHidden.astro';
+
+type Size = 'sm' | 'md';
+
+interface Props {
+	name: string;
+	src?: string;
+	size?: Size;
+	labelled?: boolean;
+	class?: string;
+}
+
+const { name, src, size = 'md', labelled = false, class: className } = Astro.props;
+const initials = name.trim().split(/\s+/).slice(0, 2).map((word) => word[0] ?? '').join('').toUpperCase();
+---
+
+<span class:list={['displayAvatar', `displayAvatar${size[0].toUpperCase()}${size.slice(1)}`, className]} title={name} aria-hidden={labelled ? 'true' : undefined}>
+	{src ? (
+		<img class="displayAvatarImage" src={src} alt={labelled ? '' : name} />
+	) : (
+		<>
+			<span class="displayAvatarInitials" aria-hidden="true">{initials}</span>
+			{!labelled && <VisuallyHidden>{name}</VisuallyHidden>}
+		</>
+	)}
+</span>

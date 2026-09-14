@@ -1,0 +1,26 @@
+---
+interface Props {
+	side?: 'top' | 'right' | 'bottom' | 'left';
+	align?: 'start' | 'center' | 'end';
+	sideOffset?: number;
+	class?: string;
+	id?: string;
+}
+
+const { side = 'bottom', align = 'start', sideOffset = 6, class: className, id = 'astro-dropdown-menu-content' } = Astro.props;
+---
+
+<div class="overlayLayer" data-dropdown-layer hidden>
+	<div
+		id={id}
+		class:list={['floatingPanel', 'dropdownPanel', className]}
+		role="menu"
+		tabindex="-1"
+		data-dropdown-panel
+		data-side={side}
+		data-align={align}
+		data-side-offset={sideOffset}
+	>
+		<slot />
+	</div>
+</div>

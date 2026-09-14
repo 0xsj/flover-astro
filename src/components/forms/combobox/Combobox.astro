@@ -1,0 +1,255 @@
+---
+export interface ChoiceOption {
+	value: string;
+	label: string;
+	description?: string;
+	disabled?: boolean;
+}
+
+interface Props {
+	label: string;
+	options: readonly ChoiceOption[];
+	value?: string | null;
+	defaultValue?: string | null;
+	placeholder?: string;
+	name?: string;
+	id?: string;
+	hint?: string;
+	error?: string;
+	required?: boolean;
+	disabled?: boolean;
+	readOnly?: boolean;
+	emptyMessage?: string;
+	class?: string;
+}
+
+const {
+	label,
+	options,
+	value,
+	defaultValue,
+	placeholder = 'Search options…',
+	name,
+	id,
+	hint,
+	error,
+	required = false,
+	disabled = false,
+	readOnly = false,
+	emptyMessage,
+	class: className
+} = Astro.props;
+
+const controlId = id ?? `combobox-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
+const listId = `${controlId}-list`;
+const hintId = hint ? `${controlId}-hint` : undefined;
+const errorId = error ? `${controlId}-error` : undefined;
+const describedBy = [errorId, hintId].filter(Boolean).join(' ') || undefined;
+const selectedValue = value !== undefined ? value ?? '' : defaultValue ?? '';
+const selectedOption = options.find((option) => option.value === selectedValue);
+const selectedLabel = selectedOption?.label ?? '';
+---
+
+<div
+	class:list={['pickerField', className]}
+	data-astro-combobox
+	data-error={error ? 'true' : undefined}
+	data-empty-message={emptyMessage}
+>
+	<label class="pickerLabel" for={controlId}>
+		{label}
+		{required && <span class="pickerRequired" aria-hidden="true">*</span>}
+	</label>
+	<div class="combobox">
+		<input
+			id={controlId}
+			type="text"
+			role="combobox"
+			value={selectedLabel}
+			placeholder={placeholder}
+			autocomplete="off"
+			aria-autocomplete="list"
+			aria-expanded="false"
+			aria-controls={listId}
+			aria-describedby={describedBy}
+			aria-invalid={error ? 'true' : undefined}
+			required={required}
+			readonly={readOnly}
+			disabled={disabled}
+			data-combobox-input
+		/>
+		{selectedOption && !disabled && !readOnly && (
+			<button type="button" class="comboboxClear" aria-label={`Clear ${label}`} data-combobox-clear>×</button>
+		)}
+		<button
+			type="button"
+			class="comboboxButton"
+			aria-label={`Show options for ${label}`}
+			disabled={disabled || readOnly}
+			data-combobox-toggle
+		>⌄</button>
+		<input type="hidden" name={name} value={selectedValue} disabled={disabled} data-combobox-value />
+		<ul id={listId} class="comboboxList" role="listbox" hidden>
+			{options.map((option) => (
+				<li
+					class="comboboxOption"
+					role="option"
+					data-value={option.value}
+					data-label={option.label}
+					aria-selected={option.value === selectedValue ? 'true' : 'false'}
+					aria-disabled={option.disabled ? 'true' : undefined}
+				>
+					<span class="comboboxOptionText">
+						<strong>{option.label}</strong>
+						{option.description && <small>{option.description}</small>}
+					</span>
+				</li>
+			))}
+			<li class="pickerEmpty" role="presentation" data-combobox-empty hidden>
+				{emptyMessage ?? (options.length ? 'No matching options.' : 'No options available.')}
+			</li>
+		</ul>
+	</div>
+	{error && <p id={errorId} class="pickerError">{error}</p>}
+	{hint && <p id={hintId} class="pickerHint">{hint}</p>}
+</div>
+
+<script>
+	document.querySelectorAll<HTMLElement>('[data-astro-combobox]').forEach((root) => {
+		const input = root.querySelector<HTMLInputElement>('[data-combobox-input]');
+		const hidden = root.querySelector<HTMLInputElement>('[data-combobox-value]');
+		const list = root.querySelector<HTMLUListElement>('[role="listbox"]');
+		const toggle = root.querySelector<HTMLButtonElement>('[data-combobox-toggle]');
+		const clear = root.querySelector<HTMLButtonElement>('[data-combobox-clear]');
+		const empty = root.querySelector<HTMLElement>('[data-combobox-empty]');
+		const options = [...root.querySelectorAll<HTMLElement>('[role="option"]')];
+		if (!input || !hidden || !list) return;
+
+		let committedValue = hidden.value;
+		let committedLabel = input.value;
+		let activeIndex = -1;
+
+		const visibleOptions = () => options.filter((option) => !option.hidden && option.getAttribute('aria-disabled') !== 'true');
+		const setValidity = () => {
+			if (root.dataset.error === 'true') return;
+			if (input.required && !hidden.value) input.setCustomValidity(`Choose ${input.getAttribute('aria-label') ?? 'an option'}.`);
+			else input.setCustomValidity('');
+		};
+		const setActive = (index: number) => {
+			const choices = visibleOptions();
+			choices.forEach((option) => option.removeAttribute('data-active'));
+			activeIndex = choices.length ? (index + choices.length) % choices.length : -1;
+			const active = activeIndex >= 0 ? choices[activeIndex] : undefined;
+			if (!active) {
+				input.removeAttribute('aria-activedescendant');
+				return;
+			}
+			active.id ||= `${input.id}-option-${active.dataset.value}`;
+			active.dataset.active = '';
+			input.setAttribute('aria-activedescendant', active.id);
+		};
+		const render = (query: string) => {
+			const needle = query.trim().toLocaleLowerCase();
+			let matches = 0;
+			options.forEach((option) => {
+				const haystack = `${option.dataset.label ?? ''} ${option.textContent ?? ''}`.toLocaleLowerCase();
+				const matchesQuery = !needle || haystack.includes(needle);
+				option.hidden = !matchesQuery;
+				if (matchesQuery) matches += 1;
+			});
+			if (empty) {
+				empty.hidden = matches > 0;
+				empty.textContent = needle
+					? (root.dataset.emptyMessage ?? 'No matching options.')
+					: (options.length ? 'No matching options.' : 'No options available.');
+			}
+			setActive(-1);
+		};
+		const open = (showAll = false) => {
+			if (input.disabled || input.readOnly) return;
+			render(showAll || input.value === committedLabel ? '' : input.value);
+			list.hidden = false;
+			input.setAttribute('aria-expanded', 'true');
+		};
+		const close = (restore = false) => {
+			if (restore) {
+				input.value = committedLabel;
+				hidden.value = committedValue;
+				setValidity();
+			}
+			list.hidden = true;
+			input.setAttribute('aria-expanded', 'false');
+			input.removeAttribute('aria-activedescendant');
+			options.forEach((option) => {
+				option.hidden = false;
+				option.removeAttribute('data-active');
+			});
+			activeIndex = -1;
+		};
+		const commit = (option: HTMLElement) => {
+			if (option.getAttribute('aria-disabled') === 'true') return;
+			committedValue = option.dataset.value ?? '';
+			committedLabel = option.dataset.label ?? '';
+			input.value = committedLabel;
+			hidden.value = committedValue;
+			options.forEach((entry) => entry.setAttribute('aria-selected', entry === option ? 'true' : 'false'));
+			if (clear) clear.hidden = false;
+			setValidity();
+			hidden.dispatchEvent(new Event('change', { bubbles: true }));
+			close();
+		};
+
+		input.addEventListener('focus', () => open(true));
+		input.addEventListener('input', () => {
+			if (input.value !== committedLabel) {
+				hidden.value = '';
+				if (clear) clear.hidden = true;
+			}
+			setValidity();
+			open();
+		});
+		input.addEventListener('keydown', (event) => {
+			const choices = visibleOptions();
+			if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+				event.preventDefault();
+				open();
+				setActive(activeIndex + (event.key === 'ArrowDown' ? 1 : -1));
+				return;
+			}
+			if (event.key === 'Enter' && !list.hidden) {
+				const exact = choices[activeIndex] ?? choices.find((option) => option.dataset.label === input.value);
+				if (exact) {
+					event.preventDefault();
+					commit(exact);
+					return;
+				}
+			}
+			if (event.key === 'Escape') {
+				event.preventDefault();
+				close(true);
+			}
+		});
+		toggle?.addEventListener('click', () => {
+			if (list.hidden) open(true);
+			else close(true);
+		});
+		clear?.addEventListener('click', () => {
+			input.value = '';
+			hidden.value = '';
+			committedValue = '';
+			committedLabel = '';
+			options.forEach((option) => option.setAttribute('aria-selected', 'false'));
+			clear.hidden = true;
+			setValidity();
+			input.focus();
+		});
+		options.forEach((option) => {
+			option.addEventListener('mousedown', (event) => event.preventDefault());
+			option.addEventListener('click', () => commit(option));
+		});
+		document.addEventListener('click', (event) => {
+			if (event.target instanceof Node && !root.contains(event.target)) close();
+		});
+		if (!clear && selectedValue) setValidity();
+	});
+</script>

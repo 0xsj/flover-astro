@@ -1,0 +1,18 @@
+---
+interface Props {
+	width?: string;
+	height?: string;
+	circle?: boolean;
+	class?: string;
+	style?: string;
+}
+
+const { width, height, circle = false, class: className, style } = Astro.props;
+const sizeStyle = `${width ? `inline-size:${width};` : ''}${height ? `block-size:${height};` : ''}`;
+---
+
+<span
+	aria-hidden="true"
+	class:list={['skeleton', circle && 'skeletonCircle', className]}
+	style={`${sizeStyle}${style ?? ''}`}
+></span>

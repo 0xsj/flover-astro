@@ -1,0 +1,22 @@
+---
+interface Props {
+	disabled?: boolean;
+	danger?: boolean;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { disabled = false, danger = false, class: className, ...rest } = Astro.props;
+---
+
+<button
+	{...rest}
+	class:list={['dropdownItem', className]}
+	type="button"
+	role="menuitem"
+	disabled={disabled}
+	data-dropdown-item
+	data-tone={danger ? 'crit' : undefined}
+>
+	<slot />
+</button>

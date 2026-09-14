@@ -1,0 +1,19 @@
+---
+interface Props {
+	target?: string;
+	class?: string;
+}
+
+const { target = 'body', class: className } = Astro.props;
+---
+
+<div class:list={['portalPlaceholder', className]} data-astro-portal data-portal-target={target}><slot /></div>
+
+<script>
+	document.querySelectorAll<HTMLElement>('[data-astro-portal]').forEach((portal) => {
+		const target = document.querySelector(portal.dataset.portalTarget ?? 'body');
+		if (!target || !portal.parentNode) return;
+		while (portal.firstChild) target.append(portal.firstChild);
+		portal.remove();
+	});
+</script>

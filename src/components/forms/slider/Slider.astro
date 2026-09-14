@@ -1,0 +1,74 @@
+---
+interface Props {
+	label: string;
+	value?: number | string;
+	defaultValue?: number | string;
+	min?: number | string;
+	max?: number | string;
+	step?: number | string;
+	disabled?: boolean;
+	outputId?: string;
+	class?: string;
+	style?: string;
+	[key: string]: unknown;
+}
+
+const {
+	label,
+	value,
+	defaultValue,
+	min = 0,
+	max = 100,
+	step = 1,
+	disabled = false,
+	outputId,
+	class: className,
+	style,
+	...rest
+} = Astro.props;
+const initialValue = value ?? defaultValue ?? min;
+const numericValue = Number(initialValue);
+const numericMin = Number(min);
+const numericMax = Number(max);
+const progress = Number.isFinite(numericValue) && numericMax > numericMin
+	? `${Math.min(100, Math.max(0, ((numericValue - numericMin) / (numericMax - numericMin)) * 100))}%`
+	: '0%';
+---
+
+<input
+	{...rest}
+	type="range"
+	min={min}
+	max={max}
+	step={step}
+	value={initialValue}
+	disabled={disabled}
+	aria-label={label}
+	data-astro-slider=""
+	data-output-id={outputId}
+	class:list={['slider', className]}
+	style={`--slider-progress: ${progress};${style ?? ''}`}
+/> 
+
+<script>
+	document.querySelectorAll<HTMLInputElement>('input[data-astro-slider]').forEach((slider) => {
+		const outputId = slider.dataset.outputId;
+		const output = outputId ? document.getElementById(outputId) : null;
+		const suffix = output?.dataset.suffix ?? '';
+
+		const sync = () => {
+			const min = Number(slider.min);
+			const max = Number(slider.max);
+			const value = Number(slider.value);
+			const progress = Number.isFinite(value) && max > min
+				? ((value - min) / (max - min)) * 100
+				: 0;
+			slider.style.setProperty('--slider-progress', `${Math.min(100, Math.max(0, progress))}%`);
+			if (output) output.textContent = `${slider.value}${suffix}`;
+		};
+
+		sync();
+		slider.addEventListener('input', sync);
+		slider.addEventListener('change', sync);
+	});
+</script>

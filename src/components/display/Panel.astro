@@ -1,0 +1,20 @@
+---
+interface Props {
+	title?: string;
+	actions?: string;
+	flush?: boolean;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { title, actions, flush = false, class: className, ...rest } = Astro.props;
+const hasActions = actions !== undefined || Astro.slots.has('actions');
+---
+
+<section {...rest} class:list={['displayPanel', className]}>
+	{(title || hasActions) && <header class="displayPanelHead">
+		{title ? <h3 class="displayPanelTitle">{title}</h3> : <span aria-hidden="true"></span>}
+		{hasActions && <div class="displayPanelActions">{actions}<slot name="actions" /></div>}
+	</header>}
+	<div class:list={['displayPanelBody', flush && 'displayPanelFlush']}><slot /></div>
+</section>

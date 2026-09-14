@@ -1,0 +1,20 @@
+---
+import Th from './Th.astro';
+
+interface Props {
+	direction: 'ascending' | 'descending' | 'none';
+	numeric?: boolean;
+	sortLabel?: string;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { direction, numeric = false, sortLabel = 'Sort column', class: className, ...rest } = Astro.props;
+const glyph = direction === 'ascending' ? '↑' : direction === 'descending' ? '↓' : '↕';
+---
+
+<Th {...rest} numeric={numeric} class={className} aria-sort={direction}>
+	<button class="displayTableSort" type="button" aria-label={sortLabel} data-sort-direction={direction}>
+		<slot /><span aria-hidden="true">{glyph}</span>
+	</button>
+</Th>

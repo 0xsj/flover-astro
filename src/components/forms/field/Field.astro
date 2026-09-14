@@ -1,0 +1,28 @@
+---
+import Label from '../label/Label.astro';
+import { fieldDescriptionIds } from './field';
+
+interface Props {
+	label: string;
+	controlId: string;
+	hint?: string;
+	error?: string;
+	required?: boolean;
+	class?: string;
+}
+
+const { label, controlId, hint, error, required = false, class: className } = Astro.props;
+const { hintId, errorId } = fieldDescriptionIds(controlId, hint, error);
+---
+
+<div class:list={['field', className]}>
+	<Label for={controlId}>
+		{label}
+		{required && <span class="fieldRequired" aria-hidden="true">*</span>}
+	</Label>
+
+	<slot />
+
+	{error && <p id={errorId} class="fieldError">{error}</p>}
+	{hint && <p id={hintId} class="fieldHint">{hint}</p>}
+</div>

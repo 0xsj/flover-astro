@@ -1,0 +1,17 @@
+---
+interface Props {
+	label: string;
+	value: number | null;
+	max?: number;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { label, value, max = 100, class: className, ...rest } = Astro.props;
+const limit = Number.isFinite(Number(max)) && Number(max) > 0 ? Number(max) : 100;
+const amount = value === null || !Number.isFinite(Number(value))
+	? undefined
+	: Math.max(0, Math.min(Number(value), limit));
+---
+
+<progress {...rest} class:list={['progress', className]} aria-label={label} max={limit} value={amount}></progress>

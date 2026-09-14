@@ -1,0 +1,20 @@
+---
+import CardAction from './CardAction.astro';
+
+interface Props {
+	leading?: string;
+	actions?: string;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { leading, actions, class: className, ...rest } = Astro.props;
+const hasLeading = leading !== undefined || Astro.slots.has('leading');
+const hasActions = actions !== undefined || Astro.slots.has('actions');
+---
+
+<div {...rest} class:list={['displayCardHeader', className]}>
+	{hasLeading && <div class="displayCardLeading">{leading}<slot name="leading" /></div>}
+	<div class="displayCardHeading"><slot /></div>
+	{hasActions && <CardAction><span>{actions}</span><slot name="actions" /></CardAction>}
+</div>

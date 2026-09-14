@@ -83,6 +83,9 @@
 
 	.row { display: flex; align-items: center; gap: var(--space-5); flex-wrap: wrap; }
 	.rowLabel { min-inline-size: 110px; font-family: var(--font-mono); font-size: var(--text-10); color: var(--ink-4); }
+	.fieldGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-7); align-items: start; inline-size: 100%; }
+	.choice { display: flex; align-items: center; gap: var(--space-4); font-size: var(--text-12-5); color: var(--ink-2); }
+	.selectWidth { inline-size: 240px; }
 	.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: var(--space-4); flex: 1 1 420px; }
 	.swatch { border: 1px solid var(--line); border-radius: var(--radius-2); overflow: hidden; background: var(--surface-panel-2); }
 	.swatchChip { block-size: 40px; }

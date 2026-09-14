@@ -1,0 +1,18 @@
+---
+interface Props {
+	defaultOpen?: boolean;
+	class?: string;
+	id?: string;
+}
+
+const { defaultOpen = false, class: className, id } = Astro.props;
+---
+
+<div id={id} class:list={['dialogRoot', className]} data-astro-dialog data-dialog-default-open={defaultOpen ? 'true' : undefined}>
+	<slot />
+</div>
+
+<script>
+	import { initDialogs } from '../../lib/overlays/runtime';
+	initDialogs();
+</script>

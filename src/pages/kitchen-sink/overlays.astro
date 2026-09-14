@@ -1,0 +1,121 @@
+---
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogTrigger,
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogFooter,
+	DialogTrigger,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+	Tooltip,
+	TooltipProvider
+} from '../../components/overlays';
+import { Button, Field, Input } from '../../components/forms';
+import Flex from '../../components/layout/Flex.astro';
+import Case from '../../components/kitchen-sink/Case.astro';
+import Section from '../../components/kitchen-sink/Section.astro';
+import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
+import overlaysSource from '../../components/overlays/doc.ts?raw';
+import dialogSource from '../../components/overlays/dialog.doc.ts?raw';
+import dialogContentSource from '../../components/overlays/DialogContent.astro?raw';
+import alertSource from '../../components/overlays/alert-dialog.doc.ts?raw';
+import alertContentSource from '../../components/overlays/AlertDialogContent.astro?raw';
+import popoverSource from '../../components/overlays/popover.doc.ts?raw';
+import popoverContentSource from '../../components/overlays/PopoverContent.astro?raw';
+import menuSource from '../../components/overlays/dropdown-menu.doc.ts?raw';
+import menuContentSource from '../../components/overlays/DropdownMenuContent.astro?raw';
+import menuItemSource from '../../components/overlays/DropdownMenuItem.astro?raw';
+import tooltipSource from '../../components/overlays/tooltip.doc.ts?raw';
+import tooltipComponentSource from '../../components/overlays/Tooltip.astro?raw';
+
+const dialogSourceText = `${dialogSource}\n\n${dialogContentSource}\n\n${overlaysSource}`;
+const alertSourceText = `${alertSource}\n\n${alertContentSource}\n\n${overlaysSource}`;
+const popoverSourceText = `${popoverSource}\n\n${popoverContentSource}\n\n${overlaysSource}`;
+const menuSourceText = `${menuSource}\n\n${menuContentSource}\n\n${menuItemSource}\n\n${overlaysSource}`;
+const tooltipSourceText = `${tooltipSource}\n\n${tooltipComponentSource}\n\n${overlaysSource}`;
+---
+
+<KitchenSinkLayout title="Overlays · flover-astro" description="The flover-astro overlay primitive catalog.">
+	<TooltipProvider>
+		<Section id="overlays" title="Overlays" blurb="Content over the page, and the one group committed to interaction behavior: focus moves in, focus is trapped, Escape closes, and focus returns to the trigger. These are invisible to a screenshot review, so each contract stays close to its example.">
+			<Case title="Dialog" note="dismissible; the accessible name is a required prop" source={['src/components/overlays/Dialog.astro', 'src/components/overlays/DialogContent.astro', 'src/components/overlays/DialogClose.astro', 'src/components/overlays/DialogFooter.astro', 'src/components/overlays/dialog.doc.ts']}>
+				<Dialog id="rename-dialog">
+					<DialogTrigger><Button>Rename target</Button></DialogTrigger>
+					<DialogContent id="rename-dialog-content" title="Rename target" description="This changes it everywhere it appears.">
+						<Field label="Name" controlId="rename-name" hint="A short label, not a hostname.">
+							<Input id="rename-name" defaultValue="api" />
+						</Field>
+						<DialogFooter>
+							<DialogClose><Button>Cancel</Button></DialogClose>
+							<DialogClose><Button intent="primary">Save</Button></DialogClose>
+						</DialogFooter>
+					</DialogContent>
+				</Dialog>
+				<p class="limits"><code>title</code> is a required prop, not a child. The dialog has a close button, closes on Escape or outside click, and returns focus to its trigger.</p>
+				<pre slot="source" class="code"><code>{dialogSourceText}</code></pre>
+			</Case>
+
+			<Case title="AlertDialog" note="requires a choice — no outside dismissal, no close button" source={['src/components/overlays/AlertDialog.astro', 'src/components/overlays/AlertDialogContent.astro', 'src/components/overlays/alert-dialog.doc.ts']}>
+				<AlertDialog id="delete-dialog">
+					<AlertDialogTrigger><Button intent="danger">Delete target</Button></AlertDialogTrigger>
+					<AlertDialogContent id="delete-dialog-content" title="Delete this target?" description="Its findings go with it. This cannot be undone.">
+						<AlertDialogCancel><Button>Keep it</Button></AlertDialogCancel>
+						<AlertDialogAction><Button intent="danger">Delete</Button></AlertDialogAction>
+					</AlertDialogContent>
+				</AlertDialog>
+				<p class="limits"><code>description</code> is required here and optional on a Dialog. There is no corner close button and an outside click is not a decision. Focus starts on the panel, while Escape resolves to the safe cancel path.</p>
+				<pre slot="source" class="code"><code>{alertSourceText}</code></pre>
+			</Case>
+
+			<Case title="Popover" note="focusable, dismissible, may contain controls" source={['src/components/overlays/Popover.astro', 'src/components/overlays/PopoverContent.astro', 'src/components/overlays/popover.doc.ts']}>
+				<Popover id="filter-popover">
+					<PopoverTrigger><Button>Filter</Button></PopoverTrigger>
+					<PopoverContent id="filter-popover-content">
+						<Flex direction="column" gap={4}>
+							<span>Anything focusable belongs here rather than in a tooltip.</span>
+							<Button size="sm">Apply</Button>
+						</Flex>
+					</PopoverContent>
+				</Popover>
+				<pre slot="source" class="code"><code>{popoverSourceText}</code></pre>
+			</Case>
+
+			<Case title="DropdownMenu" note="a list of actions — no current value" source={['src/components/overlays/DropdownMenu.astro', 'src/components/overlays/DropdownMenuContent.astro', 'src/components/overlays/DropdownMenuItem.astro', 'src/components/overlays/dropdown-menu.doc.ts']}>
+				<DropdownMenu id="target-actions">
+					<DropdownMenuTrigger><Button>Actions</Button></DropdownMenuTrigger>
+					<DropdownMenuContent id="target-actions-content">
+						<DropdownMenuLabel>This target</DropdownMenuLabel>
+						<DropdownMenuItem>Rename</DropdownMenuItem>
+						<DropdownMenuItem>Re-run checks</DropdownMenuItem>
+						<DropdownMenuSeparator />
+						<DropdownMenuItem danger>Delete</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
+				<p class="limits">A menu picks an <strong>action</strong>; a Select picks a <strong>value</strong>. Reopening shows the same actions and nothing is marked current. Arrow keys, Home, End, Escape, and typeahead are handled by the menu runtime.</p>
+				<pre slot="source" class="code"><code>{menuSourceText}</code></pre>
+			</Case>
+
+			<Case title="Tooltip" note="supplementary — the trigger must already have a name" source={['src/components/overlays/Tooltip.astro', 'src/components/overlays/TooltipProvider.astro', 'src/components/overlays/tooltip.doc.ts']}>
+				<div class="row">
+					<span class="rowLabel">hint</span>
+					<Tooltip content="Runs every enabled check against this target."><Button>Re-run</Button></Tooltip>
+					<Tooltip content="Nothing has been observed here in ninety days." side="right"><Button intent="ghost">Stale</Button></Tooltip>
+				</div>
+				<p class="limits">A tooltip is unreachable by touch and by anyone who does not hover, so it may never carry the only copy of anything. If the content is a control, it is a Popover; if it is the trigger's name, it belongs in the trigger.</p>
+				<pre slot="source" class="code"><code>{tooltipSourceText}</code></pre>
+			</Case>
+		</Section>
+	</TooltipProvider>
+</KitchenSinkLayout>

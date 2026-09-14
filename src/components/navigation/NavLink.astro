@@ -1,0 +1,12 @@
+---
+interface Props {
+	href: string;
+	active?: boolean;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { href, active = false, class: className, ...rest } = Astro.props;
+---
+
+<a {...rest} href={href} class:list={['navLinkPrimitive', className]} aria-current={active ? 'page' : undefined}><slot /></a>

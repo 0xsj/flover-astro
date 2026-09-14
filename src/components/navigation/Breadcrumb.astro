@@ -1,0 +1,12 @@
+---
+interface Props {
+	label?: string;
+	class?: string;
+}
+
+const { label = 'Breadcrumb', class: className } = Astro.props;
+---
+
+<nav aria-label={label} class:list={['breadcrumbNav', className]}>
+	<ol class="breadcrumbList"><slot /></ol>
+</nav>

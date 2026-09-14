@@ -1,12 +1,60 @@
 ---
-import { Button } from '../../components/forms';
+import { Button, Checkbox, Field, Fieldset, Input, Radio, RadioGroup, Select, Slider, Switch, Textarea, Toggle, fieldControlProps } from '../../components/forms';
 import Case from '../../components/kitchen-sink/Case.astro';
 import Section from '../../components/kitchen-sink/Section.astro';
 import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
 import buttonSource from '../../components/forms/button/Button.astro?raw';
 import buttonDoc from '../../components/forms/button/doc.ts?raw';
+import labelSource from '../../components/forms/label/Label.astro?raw';
+import fieldSource from '../../components/forms/field/Field.astro?raw';
+import fieldWiringSource from '../../components/forms/field/field.ts?raw';
+import fieldDoc from '../../components/forms/field/doc.ts?raw';
+import fieldsetSource from '../../components/forms/fieldset/Fieldset.astro?raw';
+import fieldsetDoc from '../../components/forms/fieldset/doc.ts?raw';
+import inputSource from '../../components/forms/input/Input.astro?raw';
+import textareaSource from '../../components/forms/input/Textarea.astro?raw';
+import inputDoc from '../../components/forms/input/doc.ts?raw';
+import checkboxSource from '../../components/forms/checkbox/Checkbox.astro?raw';
+import checkboxDoc from '../../components/forms/checkbox/doc.ts?raw';
+import switchSource from '../../components/forms/switch/Switch.astro?raw';
+import switchDoc from '../../components/forms/switch/doc.ts?raw';
+import toggleSource from '../../components/forms/toggle/Toggle.astro?raw';
+import toggleDoc from '../../components/forms/toggle/doc.ts?raw';
+import radioGroupSource from '../../components/forms/radio-group/RadioGroup.astro?raw';
+import radioSource from '../../components/forms/radio-group/Radio.astro?raw';
+import radioDoc from '../../components/forms/radio-group/doc.ts?raw';
+import selectSource from '../../components/forms/select/Select.astro?raw';
+import selectDoc from '../../components/forms/select/doc.ts?raw';
+import sliderSource from '../../components/forms/slider/Slider.astro?raw';
+import sliderDoc from '../../components/forms/slider/doc.ts?raw';
 
 const buttonSourceText = `${buttonSource}\n\n${buttonDoc}`;
+const fieldSourceText = [
+	labelSource,
+	fieldSource,
+	fieldWiringSource,
+	fieldDoc,
+	fieldsetSource,
+	fieldsetDoc,
+	inputSource,
+	textareaSource,
+	inputDoc
+].join('\n\n');
+const checkboxSourceText = `${checkboxSource}\n\n${checkboxDoc}`;
+const switchSourceText = `${switchSource}\n\n${switchDoc}`;
+const toggleSourceText = `${toggleSource}\n\n${toggleDoc}`;
+const radioSourceText = `${radioGroupSource}\n\n${radioSource}\n\n${radioDoc}`;
+const selectSourceText = `${selectSource}\n\n${selectDoc}`;
+const sliderSourceText = `${sliderSource}\n\n${sliderDoc}`;
+
+const nameControl = fieldControlProps({ id: 'field-name' });
+const hostHintControl = fieldControlProps({ id: 'field-host-hint', hint: 'A hostname, not a URL.', required: true });
+const hostErrorControl = fieldControlProps({ id: 'field-host-error', error: 'That is not a hostname.', required: true });
+const hostBothControl = fieldControlProps({ id: 'field-host-both', hint: 'A hostname, not a URL.', error: 'That is not a hostname.' });
+const notesControl = fieldControlProps({ id: 'field-notes', hint: 'Markdown is not rendered.' });
+const identifierHintControl = fieldControlProps({ id: 'field-identifier-readonly', hint: 'Assigned when it was created.' });
+const identifierDisabledControl = fieldControlProps({ id: 'field-identifier-disabled' });
+const regionControl = fieldControlProps({ id: 'field-region', hint: 'A value, not an action.' });
 ---
 
 <KitchenSinkLayout title="Forms · flover-astro" description="The flover-astro form primitive catalog.">
@@ -21,6 +69,135 @@ const buttonSourceText = `${buttonSource}\n\n${buttonDoc}`;
 			<p class="limits"><strong>Loading keeps the label</strong> rather than replacing it — swapping the text moves the control under a reader&rsquo;s cursor. The indicator is hidden from assistive technology; <code>aria-busy</code> is the announcement.</p>
 			<p class="limits"><strong>Navigation uses an anchor.</strong> An href renders a link with button appearance. When inert, the href is removed, the element leaves the tab order, and <code>aria-disabled</code> communicates the state; native buttons use <code>disabled</code>.</p>
 			<pre slot="source" class="code"><code>{buttonSourceText}</code></pre>
+		</Case>
+		<Case title="Inputs and fields" note="Field owns the label, hint and error · Fieldset does the same for a group" source={['src/components/forms/label/Label.astro', 'src/components/forms/field/Field.astro', 'src/components/forms/field/field.ts', 'src/components/forms/fieldset/Fieldset.astro', 'src/components/forms/input/Input.astro', 'src/components/forms/input/Textarea.astro']}>
+			<div class="row">
+				<span class="rowLabel">a field</span>
+				<div class="fieldGrid">
+					<Field label="Name" controlId={nameControl.id}>
+						<Input {...nameControl} placeholder="api" />
+					</Field>
+					<Field label="Host" controlId={hostHintControl.id} hint="A hostname, not a URL." required>
+						<Input {...hostHintControl} placeholder="api.example.com" />
+					</Field>
+					<Field label="Host" controlId={hostErrorControl.id} error="That is not a hostname." required>
+						<Input {...hostErrorControl} value="not a host" />
+					</Field>
+					<Field label="Host" controlId={hostBothControl.id} hint="A hostname, not a URL." error="That is not a hostname.">
+						<Input {...hostBothControl} value="!!" />
+					</Field>
+				</div>
+			</div>
+
+			<div class="row">
+				<span class="rowLabel">text controls</span>
+				<div class="fieldGrid">
+					<Field label="Notes" controlId={notesControl.id} hint="Markdown is not rendered.">
+						<Textarea {...notesControl} placeholder="Anything worth saying" />
+					</Field>
+					<Field label="Identifier" controlId={identifierHintControl.id} hint="Assigned when it was created.">
+						<Input {...identifierHintControl} mono readonly value="itm_8f2a41c9" />
+					</Field>
+					<Field label="Identifier" controlId={identifierDisabledControl.id}>
+						<Input {...identifierDisabledControl} mono disabled value="itm_8f2a41c9" />
+					</Field>
+				</div>
+			</div>
+
+			<div class="row">
+				<span class="rowLabel">a group</span>
+				<div class="fieldGrid">
+					<Fieldset legend="Notify me" hint="You can change this later.">
+						<label class="choice"><input type="radio" name="notify" checked /> By email</label>
+						<label class="choice"><input type="radio" name="notify" /> By SMS</label>
+						<label class="choice"><input type="radio" name="notify" /> Not at all</label>
+					</Fieldset>
+					<Fieldset legend="Notify me" error="Pick one.">
+						<label class="choice"><input type="radio" name="notify-error" /> By email</label>
+						<label class="choice"><input type="radio" name="notify-error" /> By SMS</label>
+					</Fieldset>
+				</div>
+			</div>
+
+			<p class="limits"><strong>The child wiring is explicit in Astro.</strong> Astro's default slots cannot receive a render-function parameter, so the caller supplies a stable <code>controlId</code> and spreads the matching <code>fieldControlProps</code> result onto the control. The helper preserves the sibling rules: error first in <code>aria-describedby</code>, and absent attributes instead of false values.</p>
+			<p class="limits"><strong>A group keeps its wiring instead of handing it down.</strong> A description applying to one radio of four would be wrong three times, so it stays on the <code>&lt;fieldset&gt;</code>. The <code>&lt;legend&gt;</code> is announced before every control inside the group; a styled paragraph above it reads as unrelated text.</p>
+			<p class="limits"><strong>Read-only is not disabled.</strong> A read-only value is selectable, copyable and still in the tab order; a disabled control is out of play. They intentionally use different visual treatments.</p>
+			<pre slot="source" class="code"><code>{fieldSourceText}</code></pre>
+		</Case>
+		<Case title="Checkbox" note="three states, and the third is not a styling of the other two" source={['src/components/forms/checkbox/Checkbox.astro', 'src/components/forms/checkbox/doc.ts']}>
+			<div class="row">
+				<span class="rowLabel">states</span>
+				<span class="choice"><Checkbox id="c1" checked /><label for="c1">Checked</label></span>
+				<span class="choice"><Checkbox id="c2" /><label for="c2">Unchecked</label></span>
+				<span class="choice"><Checkbox id="c3" indeterminate /><label for="c3">Indeterminate</label></span>
+				<span class="choice"><Checkbox id="c4" disabled checked /><label for="c4">Disabled</label></span>
+			</div>
+			<p class="limits">Indeterminate reports <code>aria-checked=&quot;mixed&quot;</code> — a real, announced third state. It is a <strong>state, not a variant</strong>: a variant is chosen by the author, a state comes from the data. The label sits outside so the whole phrase is the hit target.</p>
+			<p class="limits"><strong>Checkboxes choose membership.</strong> Switches change settings and toggles retain a pressed state. Similar shapes communicate different actions, so the control must match what happens when the user activates it.</p>
+			<pre slot="source" class="code"><code>{checkboxSourceText}</code></pre>
+		</Case>
+		<Case title="Switch" note="a setting that takes effect when you flip it" source={['src/components/forms/switch/Switch.astro', 'src/components/forms/switch/doc.ts']}>
+			<div class="row">
+				<span class="rowLabel">states</span>
+				<span class="choice"><Switch id="s1" checked /><label for="s1">On</label></span>
+				<span class="choice"><Switch id="s2" /><label for="s2">Off</label></span>
+				<span class="choice"><Switch id="s3" disabled /><label for="s3">Disabled</label></span>
+			</div>
+			<p class="limits"><strong>Switch, Checkbox, and Toggle look alike but are different controls.</strong> A switch is a setting that takes effect immediately, so one inside a form with a Save button promises something the form will not deliver.</p>
+			<p class="limits">There is deliberately no loading state. An asynchronous switch should make the surrounding region busy and let the failure surface where failures surface; a control that silently reverts is worse than one that never moved.</p>
+			<pre slot="source" class="code"><code>{switchSourceText}</code></pre>
+		</Case>
+		<Case title="Toggle" note="a button that stays pressed" source={['src/components/forms/toggle/Toggle.astro', 'src/components/forms/toggle/doc.ts']}>
+			<div class="row">
+				<span class="rowLabel">shapes</span>
+				<Toggle aria-label="Bold" size="icon">B</Toggle>
+				<Toggle defaultPressed>Pressed</Toggle>
+				<Toggle shape="pill" size="sm">Filter</Toggle>
+				<Toggle disabled>Disabled</Toggle>
+			</div>
+			<p class="limits">It reports <code>aria-pressed</code>, which makes it a toggle rather than a button that happens to look different when active. Pressed is a <strong>state the control reports</strong>, not a class the caller sets—the styling keys off the state attribute so appearance and announcement cannot drift.</p>
+			<p class="limits"><strong>Toggle changes the view.</strong> Nothing it does is submitted and nothing it does is an immediate setting. An icon-only toggle still needs an accessible name.</p>
+			<pre slot="source" class="code"><code>{toggleSourceText}</code></pre>
+		</Case>
+		<Case title="Radio group" note="the group owns the value; the legend owns the question" source={['src/components/forms/radio-group/RadioGroup.astro', 'src/components/forms/radio-group/Radio.astro', 'src/components/forms/radio-group/doc.ts']}>
+			<Fieldset legend="Notify me" hint="Arrows move within the group; Tab leaves it.">
+				<RadioGroup>
+					<span class="choice"><Radio name="radio-notify" value="email" checked id="r1" /><label for="r1">By email</label></span>
+					<span class="choice"><Radio name="radio-notify" value="sms" id="r2" /><label for="r2">By SMS</label></span>
+					<span class="choice"><Radio name="radio-notify" value="none" id="r3" /><label for="r3">Not at all</label></span>
+				</RadioGroup>
+			</Fieldset>
+			<p class="limits">One tab stop for the whole group, arrows within it—not one stop per option. Same-name native radios provide that behavior without a hand-rolled roving-tab index. The question is a <code>&lt;legend&gt;</code> rather than a group label because it has to be announced before every option.</p>
+			<p class="limits"><strong>The Astro port keeps the group name explicit.</strong> A slotted Astro child cannot receive a prop from its parent, so each <code>Radio</code> carries the same <code>name</code> in server-rendered HTML. The browser then owns selection, keyboard movement, and form serialization.</p>
+			<pre slot="source" class="code"><code>{radioSourceText}</code></pre>
+		</Case>
+		<Case title="Select" note="a value bound to a form · not a menu" source={['src/components/forms/select/Select.astro', 'src/components/forms/select/doc.ts']}>
+			<div class="selectWidth">
+				<Field label="Region" controlId={regionControl.id} hint="A value, not an action.">
+					<Select {...regionControl}>
+						<option value="eu" selected>Europe</option>
+						<option value="us">North America</option>
+						<option value="ap">Asia Pacific</option>
+					</Select>
+				</Field>
+			</div>
+			<p class="limits"><strong>A select picks a value; a menu picks an action.</strong> They may look nearly identical and are announced completely differently. A native select keeps the current value, participates in form submission, and retains the browser's keyboard and option announcement contract.</p>
+			<p class="limits"><strong>The rich list is deferred.</strong> The sibling ports portal their custom list so overflow-hidden ancestors cannot clip it and style keyboard highlight with <code>data-highlighted</code>. That interaction contract belongs in a later client-island slice; this first Astro version keeps the server-rendered native control complete.</p>
+			<pre slot="source" class="code"><code>{selectSourceText}</code></pre>
+		</Case>
+		<Case title="Slider" note="a single numeric value · arrow keys, Home, and End" source={['src/components/forms/slider/Slider.astro', 'src/components/forms/slider/doc.ts']}>
+			<div class="controlExample">
+				<div>Volume <output id="volume-output" for="volume-slider" data-suffix="%">40%</output></div>
+				<Slider id="volume-slider" label="Volume" value={40} outputId="volume-output" />
+				<p class="quiet">The output follows native input events.</p>
+				<div>Interval <output id="interval-output" for="interval-slider">25</output></div>
+				<Slider id="interval-slider" label="Interval" defaultValue={25} min={5} max={60} step={5} outputId="interval-output" />
+				<div class="quiet">Disabled volume</div>
+				<Slider id="disabled-volume-slider" label="Disabled volume" value={60} disabled />
+			</div>
+			<p class="limits"><strong>The range input owns the interaction.</strong> Arrow keys adjust one step, Home and End select the bounds, pointer dragging changes the value, and <code>name</code> participates in form submission. The visible output is a separate element that mirrors the native value.</p>
+			<p class="limits"><strong>This first port has one thumb.</strong> The sibling headless versions expose controlled change and commit callbacks; Astro keeps later changes browser-owned until a client-state contract justifies an island.</p>
+			<pre slot="source" class="code"><code>{sliderSourceText}</code></pre>
 		</Case>
 	</Section>
 </KitchenSinkLayout>

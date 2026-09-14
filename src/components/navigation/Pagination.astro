@@ -1,0 +1,31 @@
+---
+import { pageItems } from './pages';
+
+interface Props {
+	page: number;
+	totalPages: number;
+	hrefForPage?: (page: number) => string;
+	label?: string;
+	class?: string;
+}
+
+const { page, totalPages, hrefForPage = (nextPage) => `?page=${nextPage}`, label = 'Pagination', class: className } = Astro.props;
+const total = Number.isFinite(totalPages) ? Math.max(0, Math.floor(totalPages)) : 0;
+const current = Number.isFinite(page) ? Math.max(1, Math.min(Math.floor(page), total)) : 1;
+---
+
+{total > 1 && (
+	<nav class:list={['pagination', className]} aria-label={label}>
+		{current > 1 ? <a class="paginationAction" href={hrefForPage(current - 1)} aria-label="Previous page">‹<span class="paginationWord">Previous</span></a> : <span class="paginationAction paginationDisabled" aria-disabled="true">‹<span class="paginationWord">Previous</span></span>}
+		<ol class="paginationPages">
+			{pageItems(current, total).map((item) => (
+				<li>
+					{typeof item === 'number' ? (
+						item === current ? <span class="paginationPage paginationCurrent" aria-current="page">{item}</span> : <a class="paginationPage" href={hrefForPage(item)} aria-label={`Page ${item}`}>{item}</a>
+					) : <span class="paginationGap" aria-hidden="true">…</span>}
+				</li>
+			))}
+		</ol>
+		{current < total ? <a class="paginationAction" href={hrefForPage(current + 1)} aria-label="Next page"><span class="paginationWord">Next</span>›</a> : <span class="paginationAction paginationDisabled" aria-disabled="true"><span class="paginationWord">Next</span>›</span>}
+	</nav>
+)}

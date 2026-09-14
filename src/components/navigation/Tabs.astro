@@ -1,0 +1,93 @@
+---
+interface Props {
+	defaultValue?: string;
+	activationMode?: 'automatic' | 'manual';
+	id?: string;
+	class?: string;
+}
+
+const { defaultValue, activationMode = 'automatic', id, class: className } = Astro.props;
+---
+
+<div id={id} class:list={['tabsRoot', className]} data-astro-tabs data-default-value={defaultValue} data-activation-mode={activationMode}>
+	<slot />
+</div>
+
+<script>
+	document.querySelectorAll<HTMLElement>('[data-astro-tabs]').forEach((root, rootIndex) => {
+		const triggers = [...root.querySelectorAll<HTMLButtonElement>('[data-tab-trigger]')];
+		const panels = [...root.querySelectorAll<HTMLElement>('[data-tab-panel]')];
+		if (!triggers.length || !panels.length) return;
+		const enabled = () => triggers.filter((trigger) => !trigger.disabled);
+		const prefix = root.id || `astro-tabs-${rootIndex}`;
+		triggers.forEach((trigger) => {
+			const value = trigger.dataset.tabValue ?? '';
+			trigger.id ||= `${prefix}-${value}-tab`;
+		});
+		panels.forEach((panel) => {
+			const value = panel.dataset.tabValue ?? '';
+			panel.id ||= `${prefix}-${value}-panel`;
+			const trigger = triggers.find((entry) => entry.dataset.tabValue === value);
+			if (trigger) {
+				trigger.setAttribute('aria-controls', panel.id);
+				panel.setAttribute('aria-labelledby', trigger.id);
+			}
+		});
+
+		const firstValue = enabled()[0]?.dataset.tabValue;
+		let current = triggers.some((trigger) => trigger.dataset.tabValue === root.dataset.defaultValue && !trigger.disabled)
+			? root.dataset.defaultValue
+			: firstValue;
+		const sync = (value: string | undefined, focus = false) => {
+			if (!value) return;
+			current = value;
+			triggers.forEach((trigger) => {
+				const selected = trigger.dataset.tabValue === value;
+				trigger.setAttribute('aria-selected', String(selected));
+				trigger.setAttribute('tabindex', selected ? '0' : '-1');
+				trigger.dataset.state = selected ? 'active' : 'inactive';
+				if (focus && selected) trigger.focus();
+			});
+			panels.forEach((panel) => {
+				const selected = panel.dataset.tabValue === value;
+				panel.hidden = !selected;
+				panel.dataset.state = selected ? 'active' : 'inactive';
+			});
+		};
+		const move = (index: number, delta: number) => {
+			const choices = enabled();
+			const currentIndex = choices.indexOf(triggers.find((trigger) => trigger.dataset.tabValue === current) ?? choices[0]);
+			const next = choices[(currentIndex + delta + choices.length) % choices.length];
+			if (!next) return;
+			next.focus();
+			if (root.dataset.activationMode !== 'manual') sync(next.dataset.tabValue, false);
+		};
+
+		triggers.forEach((trigger) => {
+			trigger.addEventListener('click', () => sync(trigger.dataset.tabValue, false));
+			trigger.addEventListener('keydown', (event) => {
+				if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+					event.preventDefault();
+					move(triggers.indexOf(trigger), 1);
+				} else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+					event.preventDefault();
+					move(triggers.indexOf(trigger), -1);
+				} else if (event.key === 'Home') {
+					event.preventDefault();
+					const first = enabled()[0];
+					first?.focus();
+					if (root.dataset.activationMode !== 'manual') sync(first?.dataset.tabValue, false);
+				} else if (event.key === 'End') {
+					event.preventDefault();
+					const last = enabled().at(-1);
+					last?.focus();
+					if (root.dataset.activationMode !== 'manual') sync(last?.dataset.tabValue, false);
+				} else if ((event.key === 'Enter' || event.key === ' ') && root.dataset.activationMode === 'manual') {
+					event.preventDefault();
+					sync(trigger.dataset.tabValue, false);
+				}
+			});
+		});
+		sync(current, false);
+	});
+</script>

@@ -1,0 +1,13 @@
+---
+interface Props {
+	value: string;
+	disabled?: boolean;
+	class?: string;
+}
+
+const { value, disabled = false, class: className } = Astro.props;
+---
+
+<div class:list={['accordionItem', className]} data-accordion-item data-accordion-value={value} data-disabled={disabled ? 'true' : 'false'}>
+	<slot />
+</div>

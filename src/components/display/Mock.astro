@@ -1,0 +1,10 @@
+---
+interface Props {
+	note?: string;
+	class?: string;
+}
+
+const { note = 'Sample data. None of this is a record.', class: className } = Astro.props;
+---
+
+<span class:list={['displayMock', className]} role="note"><span class="displayMockDot" aria-hidden="true"></span>{note}</span>

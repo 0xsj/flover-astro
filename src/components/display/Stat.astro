@@ -1,0 +1,20 @@
+---
+import { PRESENCE_MEANING, PRESENCE_WORD } from './presence';
+
+interface Props {
+	label: string;
+	value?: number | string;
+	hint?: string;
+	class?: string;
+}
+
+const { label, value, hint, class: className } = Astro.props;
+const unmeasured = value === undefined;
+const hasHint = hint !== undefined || Astro.slots.has('hint');
+---
+
+<div class:list={['displayStat', className]}>
+	<span class="displayStatLabel">{label}</span>
+	<span class:list={['displayStatValue', unmeasured && 'displayStatUnmeasured']} title={unmeasured ? PRESENCE_MEANING.unmeasured : undefined}>{unmeasured ? PRESENCE_WORD.unmeasured : value}</span>
+	{hasHint && <span class="displayStatHint">{hint}<slot name="hint" /></span>}
+</div>

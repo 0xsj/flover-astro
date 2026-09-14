@@ -1,0 +1,33 @@
+---
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../../components/disclosure';
+import Case from '../../components/kitchen-sink/Case.astro';
+import Section from '../../components/kitchen-sink/Section.astro';
+import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
+import accordionSource from '../../components/disclosure/Accordion.astro?raw';
+import itemSource from '../../components/disclosure/AccordionItem.astro?raw';
+import triggerSource from '../../components/disclosure/AccordionTrigger.astro?raw';
+import contentSource from '../../components/disclosure/AccordionContent.astro?raw';
+import disclosureDoc from '../../components/disclosure/doc.ts?raw';
+
+const accordionSourceText = `${accordionSource}\n\n${itemSource}\n\n${triggerSource}\n\n${contentSource}\n\n${disclosureDoc}`;
+---
+
+<KitchenSinkLayout title="Disclosure · flover-astro" description="The flover-astro disclosure primitive catalog.">
+	<Section id="disclosure" title="Disclosure" blurb="Reveal supporting information without losing the context around it. Each trigger is a heading and a button, with state and keyboard movement provided by the primitive.">
+		<Case title="Accordion" note="one item open; all items may be closed" source={['src/components/disclosure/Accordion.astro', 'src/components/disclosure/AccordionItem.astro', 'src/components/disclosure/AccordionTrigger.astro', 'src/components/disclosure/AccordionContent.astro', 'src/components/disclosure/doc.ts']}>
+			<Accordion id="workspace-accordion" type="single" defaultValue="workspace" collapsible>
+				<AccordionItem value="workspace"><AccordionTrigger>What belongs in a workspace?</AccordionTrigger><AccordionContent>Related projects, their members, and their shared settings. Keep the grouping meaningful to the people using it.</AccordionContent></AccordionItem>
+				<AccordionItem value="invite"><AccordionTrigger>Can I invite collaborators?</AccordionTrigger><AccordionContent>Invite people from the members page. Permissions belong to the application; this disclosure only presents the explanation.</AccordionContent></AccordionItem>
+				<AccordionItem value="unavailable" disabled><AccordionTrigger>Organization settings — unavailable</AccordionTrigger><AccordionContent>This item cannot be opened.</AccordionContent></AccordionItem>
+			</Accordion>
+			<p class="limits">Triggers are buttons inside headings. Enter and Space toggle the item; arrows move between enabled triggers. <code>collapsible</code> allows the single open item to close so no section remains selected.</p>
+			<pre slot="source" class="code"><code>{accordionSourceText}</code></pre>
+		</Case>
+		<Case title="Multiple disclosures" note="independent sections; more than one can stay open">
+			<Accordion id="export-accordion" type="multiple" defaultValue={['format', 'retention']}>
+				<AccordionItem value="format"><AccordionTrigger>Export format</AccordionTrigger><AccordionContent>Exports include column headers and preserve empty values.</AccordionContent></AccordionItem>
+				<AccordionItem value="retention"><AccordionTrigger>Retention</AccordionTrigger><AccordionContent>Retention is configured per workspace. The application supplies the policy and its explanation.</AccordionContent></AccordionItem>
+			</Accordion>
+		</Case>
+	</Section>
+</KitchenSinkLayout>

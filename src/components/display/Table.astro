@@ -1,0 +1,17 @@
+---
+interface Props {
+	caption?: string;
+	scrollLabel?: string;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { caption, scrollLabel, class: className, ...rest } = Astro.props;
+---
+
+<div class="displayTableScroll" role="region" aria-label={scrollLabel ?? caption ?? 'Scrollable table'} tabindex="0">
+	<table {...rest} class:list={['displayTable', className]}>
+		{caption && <caption class="displayTableCaption">{caption}</caption>}
+		<slot />
+	</table>
+</div>

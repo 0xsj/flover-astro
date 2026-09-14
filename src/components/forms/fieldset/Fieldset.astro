@@ -1,0 +1,27 @@
+---
+interface Props {
+	legend: string;
+	hint?: string;
+	error?: string;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { legend, hint, error, class: className, ...rest } = Astro.props;
+const id = `fieldset-${crypto.randomUUID()}`;
+const hintId = hint ? `${id}-hint` : undefined;
+const errorId = error ? `${id}-error` : undefined;
+const describedBy = [errorId, hintId].filter(Boolean).join(' ') || undefined;
+---
+
+<fieldset
+	{...rest}
+	class:list={['fieldset', className]}
+	aria-describedby={describedBy}
+	aria-invalid={error ? 'true' : undefined}
+>
+	<legend class="fieldsetLegend">{legend}</legend>
+	{hint && <p id={hintId} class="fieldsetHint">{hint}</p>}
+	<div class="fieldsetBody"><slot /></div>
+	{error && <p id={errorId} class="fieldsetError">{error}</p>}
+</fieldset>

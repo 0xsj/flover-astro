@@ -1,0 +1,95 @@
+---
+import { Alert, ErrorSurface, Progress, Skeleton, SkeletonText } from '../../components/feedback';
+import { Button } from '../../components/forms';
+import Case from '../../components/kitchen-sink/Case.astro';
+import Section from '../../components/kitchen-sink/Section.astro';
+import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
+import alertSource from '../../components/feedback/Alert.astro?raw';
+import feedbackDoc from '../../components/feedback/doc.ts?raw';
+import skeletonSource from '../../components/feedback/Skeleton.astro?raw';
+import skeletonTextSource from '../../components/feedback/SkeletonText.astro?raw';
+import progressSource from '../../components/feedback/Progress.astro?raw';
+import progressDoc from '../../components/feedback/progress.doc.ts?raw';
+import errorSurfaceSource from '../../components/feedback/ErrorSurface.astro?raw';
+
+const alertSourceText = `${alertSource}\n\n${feedbackDoc}`;
+const skeletonSourceText = `${skeletonSource}\n\n${skeletonTextSource}\n\n${feedbackDoc}`;
+const progressSourceText = `${progressSource}\n\n${progressDoc}`;
+const errorSurfaceSourceText = `${errorSurfaceSource}\n\n${feedbackDoc}`;
+---
+
+<KitchenSinkLayout title="Feedback · flover-astro" description="The flover-astro feedback primitive catalog.">
+	<Section id="feedback" title="Feedback" blurb="Messages about the page rather than about a field — a field's error belongs to its Field, which owns the wiring that connects it to a control. Each feedback primitive makes the announcement decision explicit.">
+		<Case title="Alert" note="live is absent by default, because most alerts are rendered with the page" source={['src/components/feedback/Alert.astro', 'src/components/feedback/doc.ts']}>
+			<div class="controlExample">
+				<Alert tone="info" title="Fixtures are answering">
+					No backend is configured, so every domain is served from the route table.
+				</Alert>
+				<Alert tone="warn" title="Rate limited" live="polite">
+					Too many requests. The server asked for 12 seconds.
+					<Button slot="action" size="sm">Retry</Button>
+				</Alert>
+				<Alert tone="crit" title="Your session expired" live="assertive">
+					Sign in again to continue.
+				</Alert>
+				<div data-dismissible-alert>
+					<Alert tone="accent" live="polite" dismissible>Target created.</Alert>
+					<Button size="sm" hidden data-alert-restore>Bring it back</Button>
+				</div>
+			</div>
+			<p class="limits">
+				A live region announces when its contents change. Most alerts are
+				rendered with the page, so the default is quiet; <code>polite</code> waits
+				and <code>assertive</code> interrupts. Dismissible behavior is the small
+				client enhancement that the Astro boundary requires.
+			</p>
+			<pre slot="source" class="code"><code>{alertSourceText}</code></pre>
+		</Case>
+		<Case title="Skeleton" note="hidden from readers, and sized to what is coming" source={['src/components/feedback/Skeleton.astro', 'src/components/feedback/SkeletonText.astro', 'src/components/feedback/doc.ts']}>
+			<div class="fieldGrid">
+				<div class="panel"><div class="panelBody" aria-busy="true"><SkeletonText lines={3} /></div></div>
+				<div class="panel"><div class="panelBody" aria-busy="true"><div class="row"><Skeleton circle width="28px" /><SkeletonText lines={2} /></div></div></div>
+			</div>
+			<p class="limits">
+				Every placeholder is <code>aria-hidden</code>. The busy state belongs on
+				the region as <code>aria-busy</code>; ten skeletons should not become ten
+				loading announcements. The last text line is short because real prose
+				ends mid-line.
+			</p>
+			<pre slot="source" class="code"><code>{skeletonSourceText}</code></pre>
+		</Case>
+		<Case title="Progress" note="measured, complete, zero, and indeterminate" source={['src/components/feedback/Progress.astro', 'src/components/feedback/progress.doc.ts']}>
+			<div class="controlExample">
+				<div>Import progress <output>64%</output></div>
+				<Progress label="Import progress" value={64} />
+				<div class="quiet">Not started · 0%</div>
+				<Progress label="Not started" value={0} />
+				<div class="quiet">Complete · 100%</div>
+				<Progress label="Complete" value={100} />
+				<div class="quiet">Preparing import · amount unknown</div>
+				<Progress label="Preparing import" value={null} />
+			</div>
+			<p class="limits"><code>null</code> is unknown progress, not zero. The native progress element owns the accessible distinction; the caller owns live updates, completion messages, and cancellation.</p>
+			<pre slot="source" class="code"><code>{progressSourceText}</code></pre>
+		</Case>
+		<Case title="Error surface" note="redacted detail and retryability remain distinct" source={['src/components/feedback/ErrorSurface.astro', 'src/components/feedback/doc.ts']}>
+			<div class="fieldGrid">
+				<ErrorSurface failure={{ kind: 'timeout', message: 'The source did not respond.', requestId: 'req_42' }} retryHref="#feedback" />
+				<ErrorSurface failure={{ kind: 'forbidden', message: 'You cannot access this workspace.', correlationId: 'int_7' }} />
+				<ErrorSurface failure={{ kind: 'internal', message: 'Database details are not for the browser.', requestId: 'req_99' }} digest="astro-digest-8f2" retryHref="#feedback" />
+			</div>
+			<p class="limits">A server digest means the detail has been redacted; it is a reference, not a classification. Retry is offered only when it could change the answer, and server-rendered Astro callers use a URL until a client island can own a callback.</p>
+			<pre slot="source" class="code"><code>{errorSurfaceSourceText}</code></pre>
+		</Case>
+	</Section>
+</KitchenSinkLayout>
+
+<script>
+	document.querySelectorAll<HTMLElement>('[data-dismissible-alert]').forEach((demo) => {
+		const alert = demo.querySelector<HTMLElement>('[data-astro-alert]');
+		const restore = demo.querySelector<HTMLButtonElement>('[data-alert-restore]');
+		if (!alert || !restore) return;
+		demo.addEventListener('astro-alert-dismiss', () => { restore.hidden = false; });
+		restore.addEventListener('click', () => { alert.hidden = false; restore.hidden = true; });
+	});
+</script>

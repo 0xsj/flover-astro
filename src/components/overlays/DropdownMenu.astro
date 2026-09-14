@@ -1,0 +1,18 @@
+---
+interface Props {
+	defaultOpen?: boolean;
+	class?: string;
+	id?: string;
+}
+
+const { defaultOpen = false, class: className, id } = Astro.props;
+---
+
+<div id={id} class:list={['dropdownRoot', className]} data-astro-dropdown-menu data-dropdown-default-open={defaultOpen ? 'true' : undefined}>
+	<slot />
+</div>
+
+<script>
+	import { initDropdownMenus } from '../../lib/overlays/runtime';
+	initDropdownMenus();
+</script>

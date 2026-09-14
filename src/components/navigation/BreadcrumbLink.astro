@@ -1,0 +1,14 @@
+---
+interface Props {
+	href: string;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { href, class: className, ...rest } = Astro.props;
+---
+
+<li class="breadcrumbItem">
+	<a {...rest} href={href} class:list={['breadcrumbLink', className]}><slot /></a>
+	<span class="breadcrumbSeparator" aria-hidden="true">/</span>
+</li>

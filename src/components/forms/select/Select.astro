@@ -1,0 +1,13 @@
+---
+interface Props {
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { class: className, ...rest } = Astro.props;
+---
+
+<div class="selectWrap">
+	<select {...rest} class:list={['select', className]}><slot /></select>
+	<span class="selectChevron" aria-hidden="true">⌄</span>
+</div>

@@ -1,0 +1,12 @@
+---
+interface Props {
+	numeric?: boolean;
+	scope?: 'col' | 'row' | 'colgroup' | 'rowgroup';
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { numeric = false, scope = 'col', class: className, ...rest } = Astro.props;
+---
+
+<th {...rest} scope={scope} class:list={['displayTableTh', numeric && 'displayTableNumeric', className]}><slot /></th>

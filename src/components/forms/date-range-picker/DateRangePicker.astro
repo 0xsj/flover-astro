@@ -1,0 +1,146 @@
+---
+import type { DateControlProps, DateRange } from '../date-picker/date-value';
+import { calendarRange, dateConstraints, rangeAvailabilityError } from '../date-picker/date-value';
+
+interface Props extends DateControlProps {
+	value?: DateRange | null;
+	defaultValue?: DateRange | null;
+	startName?: string;
+	endName?: string;
+}
+
+const {
+	label,
+	hint,
+	error,
+	required = false,
+	disabled = false,
+	readOnly = false,
+	id,
+	class: className,
+	form,
+	locale: _locale,
+	minDate,
+	maxDate,
+	unavailableDates = [],
+	value,
+	defaultValue,
+	startName,
+	endName
+} = Astro.props;
+
+dateConstraints({ minDate, maxDate, unavailableDates });
+const controlId = id ?? `date-range-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
+const startId = `${controlId}-start`;
+const endId = `${controlId}-end`;
+const errorId = `${controlId}-error`;
+const hintId = hint ? `${controlId}-hint` : undefined;
+const describedBy = [errorId, hintId].filter(Boolean).join(' ') || undefined;
+const selectedRange = value !== undefined ? value : defaultValue ?? null;
+if (selectedRange) calendarRange(selectedRange);
+const startValue = selectedRange?.start ?? '';
+const endValue = selectedRange?.end ?? '';
+const initialRangeError = startValue && endValue ? rangeAvailabilityError({ start: startValue, end: endValue }, unavailableDates) : null;
+---
+
+<div
+	class:list={['pickerField', className]}
+	data-astro-date-range
+	data-static-error={error}
+	data-unavailable={JSON.stringify(unavailableDates)}
+>
+	<div class="pickerLabel" id={`${controlId}-label`}>
+		{label}
+		{required && <span class="pickerRequired" aria-hidden="true">*</span>}
+	</div>
+	<div class="dateControl">
+		<div class="dateInputs">
+			<input
+				id={startId}
+				type="date"
+				name={startName}
+				form={form}
+				value={startValue}
+				min={minDate}
+				max={maxDate}
+				required={required}
+				readonly={readOnly}
+				disabled={disabled}
+				aria-label={`${label} start`}
+				aria-labelledby={`${controlId}-label`}
+				aria-describedby={describedBy}
+				aria-invalid={error || initialRangeError ? 'true' : undefined}
+				data-range-start
+			/>
+			<span class="dateSeparator" aria-hidden="true">–</span>
+			<input
+				id={endId}
+				type="date"
+				name={endName}
+				form={form}
+				value={endValue}
+				min={minDate}
+				max={maxDate}
+				required={required}
+				readonly={readOnly}
+				disabled={disabled}
+				aria-label={`${label} end`}
+				aria-labelledby={`${controlId}-label`}
+				aria-describedby={describedBy}
+				aria-invalid={error || initialRangeError ? 'true' : undefined}
+				data-range-end
+			/>
+		</div>
+		{(startValue || endValue) && !disabled && !readOnly && (
+			<button type="button" class="dateClear" aria-label={`Clear ${label}`} data-range-clear>×</button>
+		)}
+	</div>
+	<p id={errorId} class="pickerError" data-range-error hidden>{error ?? initialRangeError ?? ''}</p>
+	{hint && <p id={hintId} class="pickerHint">{hint}</p>}
+</div>
+
+<script>
+	document.querySelectorAll<HTMLElement>('[data-astro-date-range]').forEach((root) => {
+		const start = root.querySelector<HTMLInputElement>('[data-range-start]');
+		const end = root.querySelector<HTMLInputElement>('[data-range-end]');
+		const clear = root.querySelector<HTMLButtonElement>('[data-range-clear]');
+		const error = root.querySelector<HTMLElement>('[data-range-error]');
+		if (!start || !end || !error) return;
+		const unavailable = new Set(JSON.parse(root.dataset.unavailable ?? '[]') as string[]);
+		const staticError = root.dataset.staticError ?? '';
+
+		const update = () => {
+			let message = staticError;
+			if (!message && Boolean(start.value) !== Boolean(end.value)) message = 'Complete the date range.';
+			if (!message && start.value && end.value && start.value > end.value) message = 'Start date must be before end date.';
+			if (!message && start.value && end.value && [...unavailable].some((date) => date >= start.value && date <= end.value)) message = 'The range includes unavailable dates.';
+			start.setCustomValidity(message);
+			end.setCustomValidity(message);
+			if (message) {
+				error.textContent = message;
+				error.hidden = false;
+				start.setAttribute('aria-invalid', 'true');
+				end.setAttribute('aria-invalid', 'true');
+			} else {
+				error.textContent = '';
+				error.hidden = true;
+				start.removeAttribute('aria-invalid');
+				end.removeAttribute('aria-invalid');
+			}
+			if (clear) clear.hidden = !start.value && !end.value;
+		};
+
+		start.addEventListener('input', update);
+		start.addEventListener('change', update);
+		end.addEventListener('input', update);
+		end.addEventListener('change', update);
+		clear?.addEventListener('click', () => {
+			start.value = '';
+			end.value = '';
+			update();
+			start.focus();
+		});
+		start.form?.addEventListener('reset', () => window.setTimeout(update, 0));
+		update();
+	});
+</script>

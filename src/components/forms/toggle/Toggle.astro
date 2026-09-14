@@ -1,0 +1,49 @@
+---
+type ToggleSize = 'sm' | 'md' | 'icon';
+type ToggleShape = 'square' | 'pill';
+
+interface Props {
+	pressed?: boolean;
+	defaultPressed?: boolean;
+	size?: ToggleSize;
+	shape?: ToggleShape;
+	disabled?: boolean;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const {
+	pressed,
+	defaultPressed,
+	size = 'md',
+	shape = 'square',
+	disabled = false,
+	class: className,
+	...rest
+} = Astro.props;
+const isPressed = pressed ?? defaultPressed ?? false;
+const sizeClass = `toggle${size[0].toUpperCase()}${size.slice(1)}`;
+const shapeClass = `toggle${shape[0].toUpperCase()}${shape.slice(1)}`;
+---
+
+<button
+	{...rest}
+	type="button"
+	aria-pressed={String(isPressed)}
+	disabled={disabled}
+	class:list={['toggle', sizeClass, shapeClass, className]}
+	data-state={isPressed ? 'on' : 'off'}
+	data-astro-toggle=""
+>
+	<slot />
+</button>
+
+<script>
+	document.querySelectorAll<HTMLButtonElement>('[data-astro-toggle]').forEach((control) => {
+		control.addEventListener('click', () => {
+			const pressed = control.getAttribute('aria-pressed') === 'true';
+			control.setAttribute('aria-pressed', String(!pressed));
+			control.dataset.state = pressed ? 'off' : 'on';
+		});
+	});
+</script>

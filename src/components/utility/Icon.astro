@@ -1,0 +1,35 @@
+---
+export type IconName = 'check' | 'chevron-down' | 'loader-circle' | 'minus' | 'plus' | 'trash-2' | 'x';
+
+interface Props {
+	name: IconName;
+	size?: number | string;
+	strokeWidth?: number | string;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { name, size = 16, strokeWidth = 1.8, class: className, ...rest } = Astro.props;
+---
+
+<svg
+	{...rest}
+	class:list={['icon', name === 'loader-circle' && 'iconLoader', className]}
+	width={size}
+	height={size}
+	viewBox="0 0 24 24"
+	fill="none"
+	stroke="currentColor"
+	stroke-width={strokeWidth}
+	stroke-linecap="round"
+	stroke-linejoin="round"
+	aria-hidden={rest['aria-label'] ? undefined : 'true'}
+>
+	{name === 'check' && <path d="m5 12 4.2 4.2L19 6.5" />}
+	{name === 'chevron-down' && <path d="m6 9 6 6 6-6" />}
+	{name === 'loader-circle' && <path d="M21 12a9 9 0 1 1-6.36-8.64" />}
+	{name === 'minus' && <path d="M5 12h14" />}
+	{name === 'plus' && <path d="M12 5v14M5 12h14" />}
+	{name === 'trash-2' && <><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v5M14 11v5" /></>}
+	{name === 'x' && <path d="m6 6 12 12M18 6 6 18" />}
+</svg>

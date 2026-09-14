@@ -1,0 +1,112 @@
+@layer composition {
+	body[data-overlay-lock] { overflow: hidden; }
+
+	.overlayControl { display: contents; }
+	.overlayLayer[hidden] { display: none; }
+	.overlayScrim {
+		position: fixed;
+		inset: 0;
+		z-index: var(--z-scrim);
+		background: var(--scrim);
+	}
+	.overlayPanel,
+	.floatingPanel {
+		position: fixed;
+		z-index: var(--z-drawer);
+		border: 1px solid var(--line-strong);
+		border-radius: var(--radius-3);
+		background: var(--surface-raised);
+		box-shadow: var(--shadow);
+		color: var(--ink);
+	}
+	.overlayPanel {
+		inset-block-start: 50%;
+		inset-inline-start: 50%;
+		transform: translate(-50%, -50%);
+		inline-size: min(calc(100vw - var(--space-8) * 2), 460px);
+		max-block-size: calc(100dvh - var(--space-9) * 2);
+		overflow: hidden;
+		display: grid;
+		gap: var(--space-5);
+		padding: var(--space-7);
+	}
+	.overlayPanel:dir(rtl) { transform: translate(50%, -50%); }
+	.overlayHead { display: grid; gap: var(--space-3); padding-inline-end: var(--space-8); }
+	.overlayTitle { margin: 0; font-size: var(--text-15); font-weight: var(--weight-bold); color: var(--ink); }
+	.overlayDescription { margin: var(--space-3) 0 0; font-size: var(--text-12-5); line-height: var(--leading-body); color: var(--ink-3); }
+	.overlayBody { min-block-size: 0; max-block-size: calc(100dvh - var(--space-9) * 4); overflow-y: auto; font-size: var(--text-12-5); line-height: var(--leading-body); color: var(--ink-2); }
+	.overlayFooter { display: flex; justify-content: flex-end; gap: var(--space-4); flex-wrap: wrap; }
+	.overlayClose {
+		position: absolute;
+		inset-block-start: var(--space-5);
+		inset-inline-end: var(--space-5);
+	}
+	.overlayClose button {
+		display: grid;
+		place-items: center;
+		inline-size: var(--control-sm);
+		block-size: var(--control-sm);
+		border-radius: var(--radius-1);
+		color: var(--ink-4);
+		font-size: var(--text-18);
+		line-height: 1;
+	}
+	.overlayClose button:hover { color: var(--ink); background: var(--surface-hover); }
+	.overlayPanel:focus-visible, .floatingPanel:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+	.floatingPanel {
+		z-index: var(--z-palette);
+		max-block-size: min(60vh, 420px);
+		overflow: auto;
+	}
+	.popoverRoot, .dropdownRoot, .tooltipRoot { display: inline-block; }
+	.popoverRoot[data-overlay-open='true'] .floatingPanel,
+	.dropdownRoot[data-overlay-open='true'] .floatingPanel { display: block; }
+
+	@media (max-width: 560px) {
+		.overlayPanel { inline-size: min(calc(100vw - var(--space-5) * 2), 460px); padding: var(--space-6); }
+	}
+}
+
+@layer primitive {
+	.popoverRoot .floatingPanel { inline-size: min(calc(100vw - var(--space-7) * 2), 300px); padding: var(--space-6); font-size: var(--text-12-5); line-height: var(--leading-body); }
+	.dropdownPanel { min-inline-size: 180px; padding: var(--space-2); }
+	.dropdownItem {
+		display: flex;
+		align-items: center;
+		gap: var(--space-4);
+		inline-size: 100%;
+		min-block-size: var(--control-md);
+		padding-inline: var(--space-5);
+		border-radius: var(--radius-1);
+		color: var(--ink-2);
+		font: inherit;
+		font-size: var(--text-12-5);
+		text-align: start;
+		cursor: default;
+		outline: none;
+	}
+	.dropdownItem[data-highlighted] { background: var(--surface-hover); color: var(--ink); }
+	.dropdownItem:disabled { opacity: 0.45; }
+	.dropdownItem[data-tone='crit'] { color: var(--crit); }
+	.dropdownItem[data-tone='crit'][data-highlighted] { background: var(--crit-tint); }
+	.dropdownLabel { padding: var(--space-3) var(--space-5) var(--space-2); font-size: var(--text-10); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--ink-4); }
+	.dropdownSeparator { block-size: 1px; margin-block: var(--space-2); background: var(--line); }
+
+	.tooltipRoot { position: relative; }
+	.tooltipContent {
+		position: fixed;
+		z-index: var(--z-toast);
+		max-inline-size: 260px;
+		padding: var(--space-3) var(--space-5);
+		border: 1px solid var(--line-strong);
+		border-radius: var(--radius-2);
+		background: var(--ink);
+		box-shadow: var(--shadow);
+		color: var(--surface-ground);
+		font-size: var(--text-11-5);
+		line-height: var(--leading-snug);
+		pointer-events: none;
+	}
+	.tooltipProvider { display: contents; }
+}

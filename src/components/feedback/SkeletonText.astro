@@ -1,0 +1,15 @@
+---
+interface Props {
+	lines?: number;
+	class?: string;
+}
+
+const { lines = 3, class: className } = Astro.props;
+const lineCount = Math.max(1, Math.floor(lines));
+---
+
+<span aria-hidden="true" class:list={['skeletonText', className]}>
+	{Array.from({ length: lineCount }, (_, index) => (
+		<span class="skeleton" style={`inline-size:${index === lineCount - 1 ? '62%' : '100%'};`}></span>
+	))}
+</span>

@@ -1,0 +1,50 @@
+---
+import { AccessibleIcon, Icon, Portal, VisuallyHidden } from '../../components/utility';
+import { Button } from '../../components/forms';
+import Case from '../../components/kitchen-sink/Case.astro';
+import Section from '../../components/kitchen-sink/Section.astro';
+import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
+import iconSource from '../../components/utility/Icon.astro?raw';
+import accessibleIconSource from '../../components/utility/AccessibleIcon.astro?raw';
+import hiddenSource from '../../components/utility/VisuallyHidden.astro?raw';
+import portalSource from '../../components/utility/Portal.astro?raw';
+import utilityDoc from '../../components/utility/doc.ts?raw';
+
+const iconSourceText = `${iconSource}\n\n${utilityDoc}`;
+const accessibleSourceText = `${accessibleIconSource}\n\n${utilityDoc}`;
+const hiddenSourceText = `${hiddenSource}\n\n${utilityDoc}`;
+const portalSourceText = `${portalSource}\n\n${utilityDoc}`;
+---
+
+<KitchenSinkLayout title="Utility · flover-astro" description="The flover-astro utility primitive catalog.">
+	<Section id="utility" title="Utility" blurb="The small mechanisms other components need. Three of the four change what a reader is told rather than what the screen shows, so each case keeps the DOM contract visible.">
+		<Case title="Icon" note="one named inventory of marks" source={['src/components/utility/Icon.astro', 'src/components/utility/doc.ts']}>
+			<div class="iconGrid">
+				{[['check', 'Check'], ['chevron-down', 'ChevronDown'], ['loader-circle', 'LoaderCircle'], ['minus', 'Minus'], ['plus', 'Plus'], ['trash-2', 'Trash2'], ['x', 'X']].map(([name, label]) => (
+					<div class="iconCell"><Icon name={name as 'check'} size={18} /><span>{label}</span></div>
+				))}
+			</div>
+			<p class="limits">Decorative icons carry <code>aria-hidden</code> by default. The list is intentionally finite: adding an icon is a visible line in the inventory instead of an import buried in a component.</p>
+			<pre slot="source" class="code"><code>{iconSourceText}</code></pre>
+		</Case>
+		<Case title="AccessibleIcon" note="the rare case where the icon itself carries meaning" source={['src/components/utility/AccessibleIcon.astro', 'src/components/utility/Icon.astro', 'src/components/utility/doc.ts']}>
+			<div class="row"><span class="rowLabel">decorative</span><Button intent="primary"><Icon name="trash-2" size={14} aria-hidden="true" focusable="false" />Delete target</Button></div>
+			<div class="row"><span class="rowLabel">icon-only control</span><Button intent="danger" aria-label="Delete target"><Icon name="trash-2" size={14} aria-hidden="true" focusable="false" /></Button></div>
+			<div class="row"><span class="rowLabel">meaningful icon</span><AccessibleIcon name="check" label="Passing" /></div>
+			<p class="limits">Name the control when the icon sits inside one. Use <code>AccessibleIcon</code> only when there is no labellable ancestor; its wrapper announces the meaning while the SVG stays hidden.</p>
+			<pre slot="source" class="code"><code>{accessibleSourceText}</code></pre>
+		</Case>
+		<Case title="VisuallyHidden" note="text for a reader and not for the screen" source={['src/components/utility/VisuallyHidden.astro', 'src/components/utility/doc.ts']}>
+			<div class="row"><span class="rowLabel">in a sentence</span><span>Delete<VisuallyHidden> this workspace and everything in it</VisuallyHidden></span></div>
+			<div class="row"><span class="rowLabel">semantic element</span><VisuallyHidden as="h4">Filters</VisuallyHidden></div>
+			<p class="limits"><code>display:none</code> and <code>hidden</code> remove text from the accessibility tree. This component clips its content inline and leaves it available to a reader; it is not a skip link.</p>
+			<pre slot="source" class="code"><code>{hiddenSourceText}</code></pre>
+		</Case>
+		<Case title="Portal" note="the DOM parent moves after load" source={['src/components/utility/Portal.astro', 'src/components/utility/doc.ts']}>
+			<div class="portalDemo"><span>Written here.</span><Portal target="#portal-target"><span class="portalMoved">Moved to the target.</span></Portal></div>
+			<div id="portal-target" class="portalTarget" aria-label="Portal target"></div>
+			<p class="limits">The server emits a placeholder and the browser moves its children to the target. Use this only to escape clipping or containing ancestors; an overlay still owns focus, dismissal, and announcement.</p>
+			<pre slot="source" class="code"><code>{portalSourceText}</code></pre>
+		</Case>
+	</Section>
+</KitchenSinkLayout>

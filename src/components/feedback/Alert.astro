@@ -1,0 +1,50 @@
+---
+type Tone = 'neutral' | 'accent' | 'warn' | 'crit' | 'info';
+type LiveMode = 'off' | 'polite' | 'assertive';
+
+interface Props {
+	tone?: Tone;
+	title?: string;
+	live?: LiveMode;
+	dismissible?: boolean;
+	dismissLabel?: string;
+	class?: string;
+}
+
+const {
+	tone = 'neutral',
+	title,
+	live = 'off',
+	dismissible = false,
+	dismissLabel = 'Dismiss message',
+	class: className
+} = Astro.props;
+const toneClass = `alert${tone[0].toUpperCase()}${tone.slice(1)}`;
+const liveRole = live === 'assertive' ? 'alert' : live === 'polite' ? 'status' : undefined;
+const glyph = tone === 'crit' ? '!' : tone === 'warn' ? '▲' : tone === 'accent' ? '✓' : tone === 'info' ? 'i' : '•';
+---
+
+<div
+	class:list={['alert', toneClass, className]}
+	role={liveRole}
+	aria-live={live === 'off' ? undefined : live}
+	data-astro-alert
+>
+	<span class="alertGlyph" aria-hidden="true">{glyph}</span>
+	<div class="alertBody">
+		{title && <p class="alertTitle">{title}</p>}
+		<div class="alertText"><slot /></div>
+		<div class="alertAction"><slot name="action" /></div>
+	</div>
+	{dismissible && <button type="button" class="alertDismiss" aria-label={dismissLabel} data-alert-dismiss>×</button>}
+</div>
+
+<script>
+	document.querySelectorAll<HTMLElement>('[data-astro-alert]').forEach((alert) => {
+		const dismiss = alert.querySelector<HTMLButtonElement>('[data-alert-dismiss]');
+		dismiss?.addEventListener('click', () => {
+			alert.hidden = true;
+			alert.dispatchEvent(new CustomEvent('astro-alert-dismiss', { bubbles: true }));
+		});
+	});
+</script>

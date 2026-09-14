@@ -1,0 +1,14 @@
+---
+type HiddenTag = 'span' | 'div' | 'p' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+interface Props {
+	as?: HiddenTag;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { as = 'span', class: className, style: _style, ...rest } = Astro.props;
+const Tag = as;
+const hiddenStyle = 'position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;';
+---
+
+<Tag {...rest} class:list={['visuallyHidden', className]} style={hiddenStyle}><slot /></Tag>

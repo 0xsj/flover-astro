@@ -1,0 +1,182 @@
+---
+import { Badge } from '../../components/display';
+import Avatar from '../../components/display/Avatar.astro';
+import Card from '../../components/display/Card.astro';
+import CardAction from '../../components/display/CardAction.astro';
+import CardBody from '../../components/display/CardBody.astro';
+import CardDescription from '../../components/display/CardDescription.astro';
+import CardFooter from '../../components/display/CardFooter.astro';
+import CardHeader from '../../components/display/CardHeader.astro';
+import CardLink from '../../components/display/CardLink.astro';
+import CardMedia from '../../components/display/CardMedia.astro';
+import CardTitle from '../../components/display/CardTitle.astro';
+import DescriptionItem from '../../components/display/DescriptionItem.astro';
+import DescriptionList from '../../components/display/DescriptionList.astro';
+import Empty from '../../components/display/Empty.astro';
+import Mock from '../../components/display/Mock.astro';
+import Panel from '../../components/display/Panel.astro';
+import Presence from '../../components/display/Presence.astro';
+import SortableTh from '../../components/display/SortableTh.astro';
+import Stat from '../../components/display/Stat.astro';
+import Table from '../../components/display/Table.astro';
+import TBody from '../../components/display/TBody.astro';
+import TFoot from '../../components/display/TFoot.astro';
+import THead from '../../components/display/THead.astro';
+import Td from '../../components/display/Td.astro';
+import Th from '../../components/display/Th.astro';
+import Tr from '../../components/display/Tr.astro';
+import { Button } from '../../components/forms';
+import Case from '../../components/kitchen-sink/Case.astro';
+import Section from '../../components/kitchen-sink/Section.astro';
+import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
+import displayDoc from '../../components/display/doc.ts?raw';
+import badgeSource from '../../components/display/Badge.astro?raw';
+import avatarSource from '../../components/display/Avatar.astro?raw';
+import cardSource from '../../components/display/Card.astro?raw';
+import cardHeaderSource from '../../components/display/CardHeader.astro?raw';
+import cardTitleSource from '../../components/display/CardTitle.astro?raw';
+import panelSource from '../../components/display/Panel.astro?raw';
+import emptySource from '../../components/display/Empty.astro?raw';
+import mockSource from '../../components/display/Mock.astro?raw';
+import presenceSource from '../../components/display/Presence.astro?raw';
+import statSource from '../../components/display/Stat.astro?raw';
+import descriptionSource from '../../components/display/DescriptionList.astro?raw';
+import descriptionItemSource from '../../components/display/DescriptionItem.astro?raw';
+import tableSource from '../../components/display/Table.astro?raw';
+import sortableSource from '../../components/display/SortableTh.astro?raw';
+
+const displaySourceText = `${badgeSource}\n\n${avatarSource}\n\n${panelSource}\n\n${emptySource}\n\n${mockSource}\n\n${presenceSource}\n\n${statSource}\n\n${displayDoc}`;
+const cardSourceText = `${cardSource}\n\n${cardHeaderSource}\n\n${cardTitleSource}\n\n${displayDoc}`;
+const descriptionSourceText = `${descriptionSource}\n\n${descriptionItemSource}\n\n${displayDoc}`;
+const tableSourceText = `${tableSource}\n\n${sortableSource}\n\n${displayDoc}`;
+const found = { state: 'found', value: '12,840' } as const;
+const empty = { state: 'empty' } as const;
+const unmeasured = { state: 'unmeasured' } as const;
+---
+
+<KitchenSinkLayout title="Display · flover-astro" description="The flover-astro display primitive catalog.">
+	<Section id="display" title="Display" blurb="What a screen shows when it is not asking for anything. These primitives keep empty, unavailable, and measured states distinct while giving screens composable surfaces for records, summaries, and structured details.">
+		<Case title="Badge and avatar" note="status and identity need words, not colour alone" source={['src/components/display/Badge.astro', 'src/components/display/Avatar.astro', 'src/components/display/doc.ts']}>
+			<div class="row">
+				<span class="rowLabel">badges</span>
+				<Badge glyph="●" tone="accent">healthy</Badge>
+				<Badge glyph="▲" tone="warn">degraded</Badge>
+				<Badge glyph="✕" tone="crit">failed</Badge>
+				<Badge glyph="›" tone="info">queued</Badge>
+				<Badge glyph="··">never checked</Badge>
+			</div>
+			<div class="row">
+				<span class="rowLabel">identity</span>
+				<Avatar name="Ada Lovelace" size="sm" />
+				<Avatar name="Grace Hopper" />
+				<Avatar name="Linus Torvalds" labelled /><span>Linus Torvalds</span>
+			</div>
+			<p class="limits">The avatar name is required even when an image is present: it supplies alternative text and the initials fallback. When the name is already visible beside it, <code>labelled</code> hides the duplicate announcement.</p>
+			<pre slot="source" class="code"><code>{displaySourceText}</code></pre>
+		</Case>
+
+		<Case title="Panel and states" note="a bounded region with a named surface" source={['src/components/display/Panel.astro', 'src/components/display/Empty.astro', 'src/components/display/Mock.astro', 'src/components/display/Presence.astro', 'src/components/display/Stat.astro', 'src/components/display/doc.ts']}>
+			<div class="fieldGrid">
+				<Panel title="Workspace status">
+					<div class="row"><Stat label="Open incidents" value={0} hint="Checked just now; no open incidents." /><Stat label="Median latency" value={undefined} hint="No measurement available." /></div>
+				</Panel>
+				<Panel title="Empty collection">
+					<Empty title="No projects yet" body="Projects will appear here once your workspace has one.">
+						<Button slot="action" size="sm">Create project</Button>
+					</Empty>
+				</Panel>
+			</div>
+			<div class="row"><Mock /><Mock note="Fixture response · not production data" /></div>
+			<div class="row">
+				<span class="rowLabel">presence</span>
+				<span>measured <Presence of={found}>12,840</Presence></span>
+				<span>empty <Presence of={empty} /></span>
+				<span>unmeasured <Presence of={unmeasured} /></span>
+			</div>
+			<p class="limits"><code>0</code> is a measurement. <code>none</code> means the source was checked and found nothing. <code>–</code> means nobody measured it. The components preserve those answers instead of collapsing them into one placeholder.</p>
+			<pre slot="source" class="code"><code>{displaySourceText}</code></pre>
+		</Case>
+
+		<Case title="Card anatomy" note="optional parts; the content chooses the structure" source={['src/components/display/Card.astro', 'src/components/display/CardHeader.astro', 'src/components/display/CardTitle.astro', 'src/components/display/doc.ts']}>
+			<div class="displayCardGrid">
+				<Card aria-labelledby="simple-card-title">
+					<CardBody>
+						<CardTitle id="simple-card-title" level={3}>A quiet starting point</CardTitle>
+						<CardDescription>A title and body are enough. Add sections as the content needs them.</CardDescription>
+					</CardBody>
+				</Card>
+				<Card aria-labelledby="composed-card-title">
+					<CardHeader>
+						<Avatar slot="leading" name="Northstar workspace" labelled />
+						<CardTitle id="composed-card-title" level={3}>A little more structure</CardTitle>
+						<CardDescription>Context belongs beside the title.</CardDescription>
+						<Badge slot="actions" glyph="●" tone="accent">New</Badge>
+					</CardHeader>
+					<CardBody><span>Use the body for details and the footer for supporting information.</span></CardBody>
+					<CardFooter><span class="quiet">Ready to explore</span><Button size="sm">Continue</Button></CardFooter>
+				</Card>
+			</div>
+			<pre slot="source" class="code"><code>{cardSourceText}</code></pre>
+		</Case>
+
+		<Case title="Media and links" note="one primary destination with independent supporting actions">
+			<div class="displayCardGrid">
+				<Card aria-labelledby="workspace-card-title">
+					<CardMedia>
+						<svg viewBox="0 0 480 270" role="img" aria-label="Illustration of three connected workspace modules">
+							<path class="displayCoverGrid" d="M0 54H480M0 108H480M0 162H480M0 216H480M80 0V270M160 0V270M240 0V270M320 0V270M400 0V270" />
+							<path class="displayCoverLine" d="M160 135H320M240 85V190" />
+							<rect class="displayCoverTile" x="90" y="95" width="100" height="80" rx="8" />
+							<rect class="displayCoverTile" x="290" y="95" width="100" height="80" rx="8" />
+							<rect class="displayCoverCenter" x="190" y="55" width="100" height="80" rx="8" />
+							<circle class="displayCoverDot" cx="240" cy="190" r="6" />
+						</svg>
+					</CardMedia>
+					<CardHeader>
+						<CardTitle id="workspace-card-title" level={3}><CardLink href="/kitchen-sink/layout">A workspace that grows with you</CardLink></CardTitle>
+						<CardDescription>Start with a clear navigation structure, then add the tools your team needs.</CardDescription>
+					</CardHeader>
+					<CardFooter><span class="quiet">Workspace collection</span><CardAction><span aria-hidden="true">↗</span></CardAction></CardFooter>
+				</Card>
+				<Card as="div" aria-labelledby="plain-card-title">
+					<CardHeader>
+						<CardTitle id="plain-card-title" level={3}>Content can stand on its own</CardTitle>
+						<CardDescription>The same structure works when there is no image.</CardDescription>
+					</CardHeader>
+					<CardBody><span>Keep the content readable and reserve space for the actions that help someone continue.</span></CardBody>
+					<CardFooter><a class="navLink" href="/kitchen-sink/layout">Explore layout primitives</a></CardFooter>
+				</Card>
+			</div>
+		</Case>
+
+		<Case title="Description list" note="terms and values remain readable at narrow widths" source={['src/components/display/DescriptionList.astro', 'src/components/display/DescriptionItem.astro', 'src/components/display/doc.ts']}>
+			<Panel title="Project details">
+				<DescriptionList>
+					<DescriptionItem term="Owner">Platform team</DescriptionItem>
+					<DescriptionItem term="Created">14 September 2026</DescriptionItem>
+					<DescriptionItem term="Identifier">workspace-with-a-deliberately-unbroken-identifier</DescriptionItem>
+					<DescriptionItem term="Status"><Badge glyph="●" tone="accent">Active</Badge></DescriptionItem>
+				</DescriptionList>
+			</Panel>
+			<pre slot="source" class="code"><code>{descriptionSourceText}</code></pre>
+		</Case>
+
+		<Case title="Compositional table" note="semantic markup, scoped headers, and measured zero" source={['src/components/display/Table.astro', 'src/components/display/SortableTh.astro', 'src/components/display/doc.ts']}>
+			<Panel title="Source coverage" flush>
+				<Table caption="Project source coverage" scrollLabel="Project source coverage table">
+					<THead>
+						<Tr><SortableTh direction="ascending" sortLabel="Sort by project">Project</SortableTh><Th>Owner</Th><Th numeric>Checks</Th><Th numeric>Open</Th></Tr>
+					</THead>
+					<TBody>
+						<Tr selected><Th scope="row">Atlas</Th><Td>Platform</Td><Td numeric>24</Td><Td numeric>0</Td></Tr>
+						<Tr><Th scope="row">Northstar</Th><Td>Research</Td><Td numeric>18</Td><Td numeric>2</Td></Tr>
+						<Tr><Th scope="row">Wayfinder</Th><Td>Operations</Td><Td numeric>—</Td><Td numeric>—</Td></Tr>
+					</TBody>
+					<TFoot><Tr><Th scope="row">Total</Th><Td>3 projects</Td><Td numeric>42</Td><Td numeric>2</Td></Tr></TFoot>
+				</Table>
+			</Panel>
+			<p class="limits">The table stays compositional instead of accepting <code>rows</code> and <code>columns</code>. That keeps cells free to contain links, badges, or controls without growing a renderer prop. A scrollable region gets its own keyboard focus target, and every header carries a scope.</p>
+			<pre slot="source" class="code"><code>{tableSourceText}</code></pre>
+		</Case>
+	</Section>
+</KitchenSinkLayout>

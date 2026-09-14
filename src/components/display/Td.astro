@@ -1,0 +1,11 @@
+---
+interface Props {
+	numeric?: boolean;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { numeric = false, class: className, ...rest } = Astro.props;
+---
+
+<td {...rest} class:list={['displayTableTd', numeric && 'displayTableNumeric', className]}><slot /></td>

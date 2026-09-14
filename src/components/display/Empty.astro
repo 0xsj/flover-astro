@@ -1,0 +1,17 @@
+---
+interface Props {
+	title: string;
+	body?: string;
+	action?: string;
+	class?: string;
+}
+
+const { title, body, action, class: className } = Astro.props;
+const hasAction = action !== undefined || Astro.slots.has('action');
+---
+
+<div class:list={['displayEmpty', className]}>
+	<p class="displayEmptyTitle">{title}</p>
+	{body && <p class="displayEmptyBody">{body}</p>}
+	{hasAction && <div class="displayEmptyAction">{action}<slot name="action" /></div>}
+</div>
