@@ -1,0 +1,80 @@
+---
+import Case from '../../components/kitchen-sink/Case.astro';
+import FontStacks from '../../components/kitchen-sink/FontStacks.astro';
+import Section from '../../components/kitchen-sink/Section.astro';
+import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
+import typographySource from '../../styles/tokens/typography.css?raw';
+
+const SIZES = [
+	'--text-9', '--text-10', '--text-11', '--text-11-5', '--text-12',
+	'--text-12-5', '--text-13', '--text-15', '--text-18', '--text-22',
+	'--text-30', '--text-42', '--text-54'
+];
+const WEIGHTS = [
+	['--weight-regular', 400], ['--weight-medium', 450],
+	['--weight-strong', 500], ['--weight-bold', 600]
+] as const;
+const LEADING = ['--leading-tight', '--leading-snug', '--leading-body'];
+const TRACKING = ['--tracking-tight', '--tracking-label'];
+const PANGRAM = 'The quick brown fox jumps over the lazy dog';
+const PROSE = 'Nobody looked and looked and found nothing are different facts, and a interface rendering both the same way has thrown away the difference at the moment it had it.';
+const FACES = [
+	{ token: '--font-sans', className: 'sansFace' },
+	{ token: '--font-mono', className: 'monoFace' }
+];
+---
+
+<KitchenSinkLayout title="Type scale · flover-astro" description="The flover-astro typography token catalog.">
+	<Section id="typography" title="Type scale" blurb="The family tokens are a contract the font loader satisfies, not a font name — typography.css asks for --font-sans-src and never learns which family answered. Swapping the family is one line in the root layout.">
+		<Case title="Stacks" note="resolved, then checked against what actually loaded">
+			<FontStacks faces={FACES} pangram={PANGRAM} />
+		</Case>
+
+		<Case title="Sizes" note="thirteen rungs; the small end is where contrast defects cluster">
+			<div class="sizes">
+				{SIZES.map((token) => (
+					<div class="sizeRow">
+						<span class="mono">{token}</span>
+						<span class="sizeSample" style={`font-size: var(${token})`}>{PANGRAM}</span>
+					</div>
+				))}
+			</div>
+		</Case>
+
+		<Case title="Weights" note="450 exists because 400 and 500 are too far apart at 13px">
+			<div class="weights">
+				{WEIGHTS.map(([token, value]) => (
+					<div class="weight">
+						<span class="weightSample" style={`font-weight: var(${token})`}>Aa 0123</span>
+						<span class="mono">{token} · {value}</span>
+					</div>
+				))}
+			</div>
+		</Case>
+
+		<Case title="Leading and tracking">
+			<div class="leading">
+				{LEADING.map((token) => (
+					<div>
+						<div class="mono">{token}</div>
+						<p class="leadingSample" style={`line-height: var(${token})`}>{PROSE}</p>
+					</div>
+				))}
+			</div>
+			{TRACKING.map((token) => (
+				<div class="row">
+					<span class="rowLabel">{token}</span>
+					<span
+						style={`letter-spacing: var(${token}); ${token === '--tracking-label' ? 'text-transform: uppercase; font-size: var(--text-11);' : 'font-size: var(--text-18);'} color: var(--ink);`}
+					>{token === '--tracking-label' ? 'Section label' : 'Tightened display line'}</span>
+				</div>
+			))}
+		</Case>
+
+		<Case title="Mono" note="tabular figures are why the audit table is legible">
+			<div class="specimen monoFace">0123456789</div>
+			<pre class="codeBlock"><code>--font-mono: var(--font-mono-src, ui-monospace),
+				"SF Mono", Menlo, monospace;</code></pre>
+		</Case>
+	</Section>
+</KitchenSinkLayout>

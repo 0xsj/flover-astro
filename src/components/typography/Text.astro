@@ -1,0 +1,40 @@
+---
+type TextElement = 'p' | 'span' | 'div';
+type TextSize = 'sm' | 'md' | 'lg';
+type TextTone = 'default' | 'muted' | 'quiet' | 'accent' | 'danger';
+type TextWeight = 'regular' | 'medium' | 'strong';
+
+interface Props {
+	as?: TextElement;
+	size?: TextSize;
+	tone?: TextTone;
+	weight?: TextWeight;
+	measure?: boolean;
+	truncate?: boolean;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const {
+	as = 'p',
+	size = 'md',
+	tone = 'default',
+	weight = 'regular',
+	measure = false,
+	truncate = false,
+	class: className,
+	...rest
+} = Astro.props;
+const Tag = as;
+const classes = [
+	'typeText',
+	`typeText${size[0].toUpperCase()}${size.slice(1)}`,
+	`typeText${tone[0].toUpperCase()}${tone.slice(1)}`,
+	`typeText${weight[0].toUpperCase()}${weight.slice(1)}`,
+	measure && 'typeTextMeasure',
+	truncate && 'typeTextTruncate',
+	className
+];
+---
+
+<Tag {...rest} class:list={classes}><slot /></Tag>

@@ -1,0 +1,42 @@
+---
+import type { ContrastCheck, Theme } from '../../lib/kitchen-sink/token-audit';
+
+interface Props {
+	theme: Theme;
+	rows: ContrastCheck[];
+}
+
+const { theme, rows } = Astro.props;
+const failed = rows.filter((row) => !row.pass).length;
+---
+
+<div class="auditTableWrap">
+	<div class="auditHead">
+		<span class="auditTheme">{theme}</span>
+		<span class:list={['verdict', failed ? 'bad' : 'ok']}>
+			{failed ? `${failed} below threshold` : `${rows.length} pairs pass`}
+		</span>
+	</div>
+	<table class="audit">
+		<thead>
+			<tr>
+				<th>Foreground</th>
+				<th>On</th>
+				<th class="num">Ratio</th>
+				<th class="num">Needs</th>
+			</tr>
+		</thead>
+		<tbody>
+			{rows.map((row) => (
+				<tr>
+					<td><code>{row.foreground}</code></td>
+					<td><code>{row.background}</code></td>
+					<td class:list={['num', row.pass ? 'pass' : 'fail']}>
+						{row.pass ? '✓' : '✕'} {row.ratio === null ? '0.00' : row.ratio.toFixed(2)}:1
+					</td>
+					<td class:list={['num', 'needs']}>{row.large ? '3.00' : '4.50'}</td>
+				</tr>
+			))}
+		</tbody>
+	</table>
+</div>

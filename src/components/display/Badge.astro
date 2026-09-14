@@ -1,0 +1,17 @@
+---
+type Tone = 'neutral' | 'accent' | 'warn' | 'crit' | 'info';
+
+interface Props {
+	tone?: Tone;
+	glyph?: string;
+	class?: string;
+}
+
+const { tone = 'neutral', glyph, class: className } = Astro.props;
+const toneClass = `badge${tone[0].toUpperCase()}${tone.slice(1)}`;
+---
+
+<span class:list={['badge', toneClass, className]}>
+	{glyph && <span class="badgeGlyph" aria-hidden="true">{glyph}</span>}
+	<slot />
+</span>

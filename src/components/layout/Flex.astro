@@ -1,0 +1,30 @@
+---
+import { splitSpace, type SpaceProps } from '../../lib/layout/space';
+
+interface Props extends SpaceProps {
+	as?: 'div' | 'section' | 'article' | 'span';
+	direction?: 'row' | 'row-reverse' | 'column' | 'column-reverse';
+	align?: string;
+	justify?: string;
+	wrap?: boolean;
+	inline?: boolean;
+	grow?: boolean;
+	class?: string;
+	style?: string;
+	[key: string]: unknown;
+}
+
+const { as = 'div', direction, align, justify, wrap, inline, grow, style, ...props } = Astro.props;
+const [spacing, rest] = splitSpace(props);
+const Tag = as;
+const flow = [
+	`display:${inline ? 'inline-flex' : 'flex'};`,
+	direction ? `flex-direction:${direction};` : '',
+	align ? `align-items:${align};` : '',
+	justify ? `justify-content:${justify};` : '',
+	wrap ? 'flex-wrap:wrap;' : '',
+	grow ? 'flex-grow:1;flex-shrink:1;flex-basis:0;min-inline-size:0;' : ''
+].join('');
+---
+
+<Tag {...rest} style={`${flow}${spacing}${style ?? ''}`}><slot /></Tag>

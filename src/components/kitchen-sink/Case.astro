@@ -1,0 +1,31 @@
+---
+interface Props {
+	title: string;
+	note?: string;
+	source?: string | string[];
+}
+
+const { title, note, source } = Astro.props;
+const sourceLabel = Array.isArray(source) ? source.join(' · ') : source;
+const id = title
+	.toLowerCase()
+	.replace(/[^a-z0-9]+/g, '-')
+	.replace(/^-|-$/g, '');
+---
+
+<div id={id} data-case={title} class="panel">
+	<div class="panelHead">
+		<h2 class="panelTitle"><a href={`#${id}`} class="anchor">{title}</a></h2>
+		{note && <span class="panelNote">{note}</span>}
+	</div>
+	<div class="panelBody"><slot /></div>
+	{source && (
+		<details class="source">
+			<summary class="sourceSummary">
+				source
+				<span class="sourcePaths">{sourceLabel}</span>
+			</summary>
+			<slot name="source" />
+		</details>
+	)}
+</div>

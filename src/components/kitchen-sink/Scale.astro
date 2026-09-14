@@ -1,0 +1,33 @@
+---
+interface Props {
+	space: string[];
+	radius: string[];
+	control: string[];
+}
+
+const { space, radius, control } = Astro.props;
+---
+
+<div class="scale">
+	{space.map((token) => (
+		<div class="scaleRow">
+			<span class="mono">{token}</span>
+			<span class="mono" aria-hidden="true"></span>
+			<div class="scaleBar" style={`inline-size: var(${token})`}></div>
+		</div>
+	))}
+</div>
+<div class="swatches">
+	{radius.map((token) => (
+		<div class="swatch" style="border: none; background: transparent">
+			<div class="scaleBox" style={`border-radius: var(${token})`}></div>
+			<div class="swatchLabel">{token}</div>
+		</div>
+	))}
+</div>
+{control.map((token) => (
+	<div class="row">
+		<span class="rowLabel">{token}</span>
+		<div class="scaleControl" style={`block-size: var(${token})`}></div>
+	</div>
+))}

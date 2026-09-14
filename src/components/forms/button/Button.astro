@@ -1,0 +1,59 @@
+---
+type Intent = 'primary' | 'secondary' | 'ghost' | 'danger' | 'link';
+type Size = 'sm' | 'md' | 'lg' | 'icon';
+
+interface Props {
+	intent?: Intent;
+	size?: Size;
+	loading?: boolean;
+	disabled?: boolean;
+	href?: string;
+	type?: 'button' | 'submit' | 'reset';
+	class?: string;
+	[key: string]: unknown;
+}
+
+const {
+	intent = 'secondary',
+	size = 'md',
+	loading = false,
+	disabled = false,
+	href,
+	type = 'button',
+	class: className,
+	...rest
+} = Astro.props;
+const inert = disabled || loading;
+const variantClass = `button${intent[0].toUpperCase()}${intent.slice(1)}`;
+const sizeClass = `button${size[0].toUpperCase()}${size.slice(1)}`;
+const classes = ['button', variantClass, sizeClass, className];
+---
+
+{href ? (
+	<a
+		{...rest}
+		href={inert ? undefined : href}
+		class:list={classes}
+		data-disabled={inert ? '' : undefined}
+		data-loading={loading ? '' : undefined}
+		aria-disabled={inert ? 'true' : undefined}
+		aria-busy={loading ? 'true' : undefined}
+		tabindex={inert ? -1 : undefined}
+	>
+		{loading && <span class="buttonSpinner" aria-hidden="true"></span>}
+		<slot />
+	</a>
+) : (
+	<button
+		{...rest}
+		type={type}
+		disabled={inert}
+		class:list={classes}
+		data-disabled={inert ? '' : undefined}
+		data-loading={loading ? '' : undefined}
+		aria-busy={loading ? 'true' : undefined}
+	>
+		{loading && <span class="buttonSpinner" aria-hidden="true"></span>}
+		<slot />
+	</button>
+)}

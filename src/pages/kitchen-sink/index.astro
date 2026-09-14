@@ -1,0 +1,29 @@
+---
+import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
+import { CATALOG, CATALOG_GROUPS } from '../../lib/kitchen-sink/catalog';
+---
+
+<KitchenSinkLayout title="Kitchen sink · flover-astro" description="The flover-astro component and token catalog.">
+	<div class="intro">
+		<p class="eyebrow">Flover / Astro</p>
+		<h1 class="title">A place for every piece.</h1>
+		<p class="lede">The kitchen sink is the working index for the Astro port: foundations first, then primitives, compositions, and runtime surfaces.</p>
+		<p class="quiet">{CATALOG.length} category in progress · theme and density controls are live</p>
+	</div>
+
+	<div class="catalogOverview">
+		{CATALOG_GROUPS.map((group) => (
+			<section class="catalogOverviewGroup" aria-labelledby={`catalog-${group}`}>
+				<p class="caseSection" id={`catalog-${group}`}>{group}</p>
+				<div class="catalogCards">
+					{CATALOG.filter((entry) => entry.group === group).map((entry) => (
+						<a class="catalogCard" href={`/kitchen-sink/${entry.id}`}>
+							<span class="catalogCardTitle">{entry.label}<span aria-hidden="true"> ↗</span></span>
+							<span>{entry.description}</span>
+						</a>
+					))}
+				</div>
+			</section>
+		))}
+	</div>
+</KitchenSinkLayout>

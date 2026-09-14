@@ -1,0 +1,17 @@
+---
+type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
+type HeadingSize = 'sm' | 'md' | 'lg' | 'xl';
+
+interface Props {
+	level: HeadingLevel;
+	size?: HeadingSize;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { level, size = 'md', class: className, ...rest } = Astro.props;
+const Tag = `h${level}`;
+const sizeClass = `typeHeading${size[0].toUpperCase()}${size.slice(1)}`;
+---
+
+<Tag {...rest} class:list={['typeHeading', sizeClass, className]}><slot /></Tag>

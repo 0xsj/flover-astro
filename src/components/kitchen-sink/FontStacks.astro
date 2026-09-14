@@ -1,0 +1,51 @@
+---
+interface Face {
+	token: string;
+	className: string;
+}
+
+interface Props {
+	faces: Face[];
+	pangram: string;
+}
+
+const { faces, pangram } = Astro.props;
+---
+
+<div class="stacks" data-font-stacks>
+	{faces.map((face) => (
+		<div class="stack" data-font-face data-font-token={face.token}>
+			<div class="stackHead">
+				<span class="mono">{face.token}</span>
+				<span class="verdict pending" data-font-state>checking</span>
+			</div>
+			<div class:list={['specimen', face.className]}>{pangram}</div>
+			<div class="stackValue" data-font-stack>unresolved</div>
+		</div>
+	))}
+</div>
+
+<script>
+	const inspectFonts = async () => {
+		await document.fonts.ready;
+		const styles = getComputedStyle(document.documentElement);
+		document.querySelectorAll('[data-font-face]').forEach((face) => {
+			const token = face.dataset.fontToken;
+			const stateElement = face.querySelector('[data-font-state]');
+			const stackElement = face.querySelector('[data-font-stack]');
+			if (!token || !stateElement || !stackElement) return;
+
+			const stack = styles.getPropertyValue(token).trim();
+			const first = (stack.split(',')[0] ?? '').trim().replace(/^["']|["']$/g, '');
+			const loaded = Boolean(first) && document.fonts.check(`13px "${first}"`);
+			const state = loaded ? 'loaded' : 'fallback';
+
+			stackElement.textContent = stack || 'unresolved';
+			stateElement.textContent = state;
+			stateElement.classList.remove('pending', 'ok', 'fallbackTone');
+			stateElement.classList.add(loaded ? 'ok' : 'fallbackTone');
+		});
+	};
+
+	void inspectFonts();
+</script>

@@ -1,0 +1,42 @@
+@layer primitive {
+	.badge {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: 1px var(--space-4);
+		border-radius: var(--radius-pill);
+		border: 1px solid;
+		font-size: var(--text-11);
+		font-weight: var(--weight-medium);
+		white-space: nowrap;
+	}
+	.badgeGlyph { font-size: var(--text-9); }
+	.badgeNeutral { color: var(--ink-3); background: var(--surface-hover); border-color: var(--line); }
+	.badgeAccent { color: var(--accent); background: var(--accent-tint); border-color: var(--accent-line); }
+	.badgeWarn { color: var(--warn); background: var(--warn-tint); border-color: var(--warn-line); }
+	.badgeCrit { color: var(--crit); background: var(--crit-tint); border-color: var(--crit-line); }
+	.badgeInfo { color: var(--info); background: var(--info-tint); border-color: var(--info-line); }
+
+	.typeHeading { margin: 0; color: var(--ink); font-weight: var(--weight-bold); line-height: var(--leading-tight); letter-spacing: var(--tracking-tight); overflow-wrap: anywhere; }
+	.typeHeadingSm { font-size: var(--text-15); }
+	.typeHeadingMd { font-size: var(--text-22); }
+	.typeHeadingLg { font-size: var(--text-30); }
+	.typeHeadingXl { font-size: var(--text-42); }
+
+	.typeText { margin: 0; line-height: var(--leading-body); }
+	.typeTextSm { font-size: var(--text-11-5); }
+	.typeTextMd { font-size: var(--text-13); }
+	.typeTextLg { font-size: var(--text-15); }
+	.typeTextDefault { color: var(--ink); }
+	.typeTextMuted { color: var(--ink-2); }
+	.typeTextQuiet { color: var(--ink-3); }
+	.typeTextAccent { color: var(--accent); }
+	.typeTextDanger { color: var(--crit); }
+	.typeTextRegular { font-weight: var(--weight-regular); }
+	.typeTextMedium { font-weight: var(--weight-medium); }
+	.typeTextStrong { font-weight: var(--weight-bold); }
+	.typeTextMeasure { max-inline-size: var(--measure); }
+	.typeTextTruncate { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+	.sectionLabel { margin: 0; font-family: var(--font-mono); font-size: var(--text-10); font-weight: var(--weight-medium); line-height: var(--leading-snug); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--ink-3); }
+}

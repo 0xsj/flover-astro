@@ -1,0 +1,31 @@
+@layer primitive {
+	.button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-3);
+		border: 1px solid transparent;
+		border-radius: var(--radius-2);
+		font-size: var(--text-12-5);
+		font-weight: var(--weight-medium);
+		white-space: nowrap;
+		transition: background var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+	}
+	.button[data-disabled] { opacity: 0.45; pointer-events: none; }
+	.buttonPrimary { background: var(--fill); border-color: var(--fill); color: var(--fill-ink); }
+	.buttonPrimary:hover { background: var(--fill-hover); border-color: var(--fill-hover); }
+	.buttonSecondary { background: var(--surface-panel); border-color: var(--line-strong); color: var(--ink); }
+	.buttonSecondary:hover { background: var(--surface-hover); border-color: var(--line-heavy); }
+	.buttonGhost { color: var(--ink-2); }
+	.buttonGhost:hover { background: var(--surface-hover); color: var(--ink); }
+	.buttonDanger { color: var(--crit); border-color: var(--crit-line); }
+	.buttonDanger:hover { background: var(--crit-tint); }
+	.buttonLink { color: var(--accent); padding: 0; block-size: auto; }
+	.buttonLink:hover { text-decoration: underline; }
+	.buttonSm { block-size: var(--control-sm); padding-inline: var(--space-4); font-size: var(--text-11-5); }
+	.buttonMd { block-size: var(--control-md); padding-inline: var(--space-5); }
+	.buttonLg { block-size: var(--control-lg); padding-inline: var(--space-7); font-size: var(--text-13); }
+	.buttonIcon { block-size: var(--control-md); inline-size: var(--control-md); padding: 0; }
+	.buttonSpinner { inline-size: 14px; block-size: 14px; border: 2px solid currentColor; border-inline-end-color: transparent; border-radius: 50%; animation: buttonSpin 0.7s linear infinite; }
+	@keyframes buttonSpin { to { transform: rotate(360deg); } }
+}

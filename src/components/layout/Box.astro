@@ -1,0 +1,16 @@
+---
+import { splitSpace, type SpaceProps } from '../../lib/layout/space';
+
+interface Props extends SpaceProps {
+	as?: 'div' | 'section' | 'article' | 'span';
+	class?: string;
+	style?: string;
+	[key: string]: unknown;
+}
+
+const { as = 'div', style, ...props } = Astro.props;
+const [spacing, rest] = splitSpace(props);
+const Tag = as;
+---
+
+<Tag {...rest} style={`${spacing}${style ?? ''}`}><slot /></Tag>

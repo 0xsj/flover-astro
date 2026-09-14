@@ -1,0 +1,15 @@
+---
+import { splitSpace, type SpaceProps } from '../../lib/layout/space';
+
+interface Props extends SpaceProps {
+	width?: 'page' | 'measure';
+	class?: string;
+	style?: string;
+	[key: string]: unknown;
+}
+
+const { width = 'page', class: className, style, ...props } = Astro.props;
+const [spacing, rest] = splitSpace(props);
+---
+
+<div {...rest} class:list={['container', width === 'measure' ? 'measure' : 'page', className]} style={`${spacing}${style ?? ''}`}><slot /></div>

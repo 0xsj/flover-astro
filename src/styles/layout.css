@@ -1,0 +1,8 @@
+@layer primitive {
+	.container { margin-inline: auto; inline-size: 100%; }
+	.page { max-inline-size: var(--page-max); }
+	.measure { max-inline-size: var(--measure); }
+	.separator { background: var(--line); flex: none; }
+	.horizontal { block-size: 1px; inline-size: 100%; }
+	.vertical { inline-size: 1px; align-self: stretch; min-block-size: 1em; }
+}

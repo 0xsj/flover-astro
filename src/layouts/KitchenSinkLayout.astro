@@ -1,0 +1,173 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import '../styles/kitchen-sink.css';
+import { CATALOG, CATALOG_GROUPS } from '../lib/kitchen-sink/catalog';
+
+interface Props {
+	title: string;
+	description?: string;
+}
+
+const { title, description } = Astro.props;
+const pathname = Astro.url.pathname.replace(/\/$/, '') || '/';
+---
+
+<BaseLayout title={title} description={description}>
+	<div class="shell">
+		<a href="#gallery-main" class="skipLink">Skip to examples</a>
+		<header class="header">
+			<div class="headerInner">
+				<a href="/kitchen-sink" class="wordmark" aria-label="Flover Astro kitchen sink">flover-astro</a>
+				<span class="headerLabel">Component catalog</span>
+				<div class="controls">
+					<a href="/" class="navLink">Home</a>
+					<div class="themebar" aria-label="Display preferences">
+						<button type="button" data-theme-choice="system" aria-pressed="true">System</button>
+						<button type="button" data-theme-choice="light" aria-pressed="false">Light</button>
+						<button type="button" data-theme-choice="dark" aria-pressed="false">Dark</button>
+						<span class="preferenceDivider" aria-hidden="true"></span>
+						<button type="button" data-density-choice="comfortable" aria-pressed="true">Comfortable</button>
+						<button type="button" data-density-choice="compact" aria-pressed="false">Compact</button>
+					</div>
+				</div>
+			</div>
+		</header>
+
+		<div class="body">
+			<aside class="rail" data-catalog-rail>
+				<button
+					type="button"
+					class="mobileNavToggle"
+					data-catalog-toggle
+					aria-expanded="false"
+					aria-controls="catalog-navigation"
+				>
+					<span aria-hidden="true">☰</span> Browse components
+				</button>
+				<nav id="catalog-navigation" aria-label="Component catalog" class="catalogNav" data-catalog-nav>
+					<a
+						href="/kitchen-sink"
+						class:list={["catalogLink", pathname === '/kitchen-sink' && 'catalogActive']}
+						aria-current={pathname === '/kitchen-sink' ? 'page' : undefined}
+					>Overview</a>
+					{CATALOG_GROUPS.map((group) => (
+						<div class="catalogGroup">
+							<p class="caseSection">{group}</p>
+							{CATALOG.filter((entry) => entry.group === group).map((entry) => {
+								const href = `/kitchen-sink/${entry.id}`;
+								return (
+									<a
+										href={href}
+										class:list={["catalogLink", pathname === href && 'catalogActive']}
+										aria-current={pathname === href ? 'page' : undefined}
+									>{entry.label}</a>
+								);
+							})}
+						</div>
+					))}
+				</nav>
+			</aside>
+
+			<main id="gallery-main" tabindex="-1" class="main" data-gallery-content>
+				<div class="sections"><slot /></div>
+			</main>
+
+			<aside class="contentsRail">
+				<nav aria-label="On this page" data-case-nav></nav>
+			</aside>
+		</div>
+	</div>
+</BaseLayout>
+
+<script>
+	const root = document.documentElement;
+	const setPressed = (attribute, value) => {
+		document.querySelectorAll(`[data-${attribute}-choice]`).forEach((button) => {
+			button.setAttribute('aria-pressed', button.dataset[`${attribute}Choice`] === value ? 'true' : 'false');
+		});
+	};
+
+	document.addEventListener('click', (event) => {
+		const target = event.target instanceof Element ? event.target : null;
+		const themeButton = target?.closest('[data-theme-choice]');
+		if (themeButton instanceof HTMLElement) {
+			const choice = themeButton.dataset.themeChoice;
+			if (choice === 'system') root.removeAttribute('data-theme');
+			else if (choice) root.dataset.theme = choice;
+			setPressed('theme', choice ?? 'system');
+			return;
+		}
+
+		const densityButton = target?.closest('[data-density-choice]');
+		if (densityButton instanceof HTMLElement) {
+			const choice = densityButton.dataset.densityChoice;
+			if (choice === 'compact') root.dataset.density = 'compact';
+			else root.removeAttribute('data-density');
+			setPressed('density', choice ?? 'comfortable');
+		}
+	});
+
+	const toggle = document.querySelector('[data-catalog-toggle]');
+	const navigation = document.querySelector('[data-catalog-nav]');
+	const closeCatalog = () => {
+		if (!(toggle instanceof HTMLElement) || !(navigation instanceof HTMLElement)) return;
+		toggle.setAttribute('aria-expanded', 'false');
+		navigation.removeAttribute('data-open');
+	};
+
+	toggle?.addEventListener('click', () => {
+		if (!(toggle instanceof HTMLElement) || !(navigation instanceof HTMLElement)) return;
+		const open = toggle.getAttribute('aria-expanded') === 'true';
+		toggle.setAttribute('aria-expanded', String(!open));
+		if (open) navigation.removeAttribute('data-open');
+		else navigation.dataset.open = '';
+	});
+	navigation?.addEventListener('click', (event) => {
+		if (event.target instanceof Element && event.target.closest('a')) closeCatalog();
+	});
+	toggle?.addEventListener('keydown', (event) => {
+		if (event.key === 'Escape') {
+			closeCatalog();
+			toggle.focus();
+		}
+	});
+
+	const caseNavigation = document.querySelector('[data-case-nav]');
+	const cases = () => [...document.querySelectorAll('[data-gallery-content] [data-case]')];
+	const updateActiveCase = () => {
+		if (!(caseNavigation instanceof HTMLElement)) return;
+		const entries = cases();
+		const active = entries
+			.filter((entry) => entry.getBoundingClientRect().top <= 140)
+			.at(-1)?.id ?? entries[0]?.id;
+		caseNavigation.querySelectorAll('a').forEach((link) => {
+			const current = link.getAttribute('href') === `#${active}`;
+			link.classList.toggle('caseLinkActive', current);
+			if (current) link.setAttribute('aria-current', 'location');
+			else link.removeAttribute('aria-current');
+		});
+	};
+	const renderCaseNavigation = () => {
+		if (!(caseNavigation instanceof HTMLElement)) return;
+		const entries = cases();
+		caseNavigation.replaceChildren();
+		if (!entries.length) return;
+		const heading = document.createElement('p');
+		heading.className = 'caseSection';
+		heading.textContent = 'On this page';
+		caseNavigation.append(heading);
+		entries.forEach((entry) => {
+			const link = document.createElement('a');
+			link.className = 'caseLink';
+			link.href = `#${entry.id}`;
+			link.textContent = entry.dataset.case ?? '';
+			caseNavigation.append(link);
+		});
+		updateActiveCase();
+	};
+
+	renderCaseNavigation();
+	window.addEventListener('scroll', updateActiveCase, { passive: true });
+	window.addEventListener('resize', updateActiveCase);
+	window.addEventListener('hashchange', updateActiveCase);
+</script>

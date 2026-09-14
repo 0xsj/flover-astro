@@ -1,0 +1,37 @@
+---
+import { Heading, SectionLabel, Text } from '../../components/typography';
+import Case from '../../components/kitchen-sink/Case.astro';
+import Section from '../../components/kitchen-sink/Section.astro';
+import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
+import headingSource from '../../components/typography/Heading.astro?raw';
+import typographyDoc from '../../components/typography/doc.ts?raw';
+import sectionLabelSource from '../../components/typography/SectionLabel.astro?raw';
+
+const headingSourceText = `${headingSource}\n\n${typographyDoc}`;
+---
+
+<KitchenSinkLayout title="Typography · flover-astro" description="The flover-astro typography primitive catalog.">
+	<Section id="type-components" title="Typography" blurb="Semantic text elements using the shared type scale. Heading level describes the document; size describes its visual emphasis.">
+		<Case title="Heading" note="choose a document level independently of its size" source={['src/components/typography/Heading.astro', 'src/styles/components.css']}>
+			<Heading level={3} size="xl">Build on a clear foundation.</Heading>
+			<Heading level={3} size="lg">A page title</Heading>
+			<Heading level={3} size="md">A section heading</Heading>
+			<Heading level={3} size="sm">A compact heading</Heading>
+			<pre slot="source" class="code"><code>{headingSourceText}</code></pre>
+		</Case>
+
+		<Case title="Text" note="size, tone, weight, readable measure, and intentional truncation">
+			<Text size="lg" measure>Readable body copy has a comfortable line length and enough space to breathe. The same component can be a paragraph or an inline span.</Text>
+			<Text>Default body text, with <Text as="span" weight="strong">strong emphasis</Text> and <Text as="span" weight="medium">medium emphasis</Text>.</Text>
+			<div class="row"><span class="rowLabel">tones</span><Text tone="muted">Supporting copy</Text><Text tone="quiet">A small annotation</Text><Text tone="accent">Ready to continue</Text><Text tone="danger">Please check this value</Text></div>
+			<Text size="sm">Small text for captions and supporting metadata.</Text>
+			<div class="controlExample"><Text truncate title="An intentionally long title that stays on one line when there is not enough space">An intentionally long title that stays on one line when there is not enough space</Text></div>
+		</Case>
+
+		<Case title="Section label" note="a visual category label; it does not invent a heading level" source="src/components/typography/SectionLabel.astro">
+			<SectionLabel>Workspace settings</SectionLabel>
+			<Text tone="muted">A small label for context above a title or beside a group of related details.</Text>
+			<pre slot="source" class="code"><code>{sectionLabelSource}</code></pre>
+		</Case>
+	</Section>
+</KitchenSinkLayout>

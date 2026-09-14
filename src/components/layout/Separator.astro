@@ -1,0 +1,20 @@
+---
+interface Props {
+	orientation?: 'horizontal' | 'vertical';
+	decorative?: boolean;
+	class?: string;
+	style?: string;
+	[key: string]: unknown;
+}
+
+const { orientation = 'horizontal', decorative = false, class: className, style, ...rest } = Astro.props;
+---
+
+<div
+	{...rest}
+	class:list={['separator', orientation === 'vertical' ? 'vertical' : 'horizontal', className]}
+	data-orientation={orientation}
+	role={decorative ? undefined : 'separator'}
+	aria-orientation={!decorative && orientation === 'vertical' ? 'vertical' : undefined}
+	style={style}
+></div>

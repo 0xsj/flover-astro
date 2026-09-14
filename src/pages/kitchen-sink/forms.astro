@@ -1,0 +1,26 @@
+---
+import { Button } from '../../components/forms';
+import Case from '../../components/kitchen-sink/Case.astro';
+import Section from '../../components/kitchen-sink/Section.astro';
+import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
+import buttonSource from '../../components/forms/button/Button.astro?raw';
+import buttonDoc from '../../components/forms/button/doc.ts?raw';
+
+const buttonSourceText = `${buttonSource}\n\n${buttonDoc}`;
+---
+
+<KitchenSinkLayout title="Forms · flover-astro" description="The flover-astro form primitive catalog.">
+	<Section id="forms" title="Forms" blurb="Button first. The platform element is already focusable, keyboard-operable and self-announcing; everything else it needs is an attribute.">
+		<Case title="Button" note="intent · size · state · navigation" source={['src/components/forms/button/Button.astro', 'src/components/forms/button/doc.ts']}>
+			<div class="row"><span class="rowLabel">intent</span><Button intent="primary">Primary</Button><Button>Secondary</Button><Button intent="ghost">Ghost</Button><Button intent="danger">Danger</Button><Button intent="link">Link</Button></div>
+			<div class="row"><span class="rowLabel">size</span><Button size="sm">Small</Button><Button size="md">Medium</Button><Button size="lg">Large</Button><Button size="icon" aria-label="Add">+</Button><Button size="icon" intent="danger" aria-label="Delete">×</Button></div>
+			<div class="row"><span class="rowLabel">icon + label</span><Button intent="primary"><span aria-hidden="true">+</span>Add target</Button><Button intent="danger"><span aria-hidden="true">×</span>Delete</Button></div>
+			<div class="row"><span class="rowLabel">disabled</span><Button disabled>Disabled</Button><Button intent="primary" disabled>Disabled</Button></div>
+			<div class="row"><span class="rowLabel">loading</span><Button loading>Saving</Button><Button intent="primary" loading>Saving</Button></div>
+			<div class="row"><span class="rowLabel">href</span><Button href="#button">A link wearing the button</Button><Button disabled href="#button">Inert link</Button></div>
+			<p class="limits"><strong>Loading keeps the label</strong> rather than replacing it — swapping the text moves the control under a reader&rsquo;s cursor. The indicator is hidden from assistive technology; <code>aria-busy</code> is the announcement.</p>
+			<p class="limits"><strong>Navigation uses an anchor.</strong> An href renders a link with button appearance. When inert, the href is removed, the element leaves the tab order, and <code>aria-disabled</code> communicates the state; native buttons use <code>disabled</code>.</p>
+			<pre slot="source" class="code"><code>{buttonSourceText}</code></pre>
+		</Case>
+	</Section>
+</KitchenSinkLayout>

@@ -1,0 +1,64 @@
+---
+type SwatchKind = 'color' | 'shadow';
+
+type Ramp = {
+	name: string;
+	kind?: SwatchKind;
+	tokens: string[];
+};
+
+interface Props {
+	ramps: Ramp[];
+}
+
+const { ramps } = Astro.props;
+---
+
+<div class="ramps" data-token-swatches>
+	{ramps.map((ramp) => (
+		<div class="ramp">
+			{ramp.name && <div class="rampName">{ramp.name}</div>}
+			<div class="grid">
+				{ramp.tokens.map((token) => (
+					<div class="cell" data-token-cell={token}>
+						{ramp.kind === 'shadow' ? (
+							<div class="shadowChip" style={`box-shadow: var(${token})`}></div>
+						) : (
+							<div class="chip">
+								<div class="paint" style={`background: var(${token})`}></div>
+							</div>
+						)}
+						<div class="meta">
+							<span class="token">{token}</span>
+							<span class="value" data-token-value>…</span>
+						</div>
+					</div>
+				))}
+			</div>
+		</div>
+	))}
+</div>
+
+<script>
+	const readTokenValues = () => {
+		const styles = getComputedStyle(document.documentElement);
+		document.querySelectorAll('[data-token-cell]').forEach((cell) => {
+			const token = cell.dataset.tokenCell;
+			const valueElement = cell.querySelector('[data-token-value]');
+			if (!token || !valueElement) return;
+			const value = styles.getPropertyValue(token).trim();
+			valueElement.textContent = value || 'UNRESOLVED';
+			valueElement.classList.toggle('value', Boolean(value));
+			valueElement.classList.toggle('unresolved', !value);
+		});
+	};
+
+	readTokenValues();
+	const observer = new MutationObserver(readTokenValues);
+	observer.observe(document.documentElement, {
+		attributes: true,
+		attributeFilter: ['data-theme', 'data-density']
+	});
+	const media = window.matchMedia('(prefers-color-scheme: dark)');
+	media.addEventListener('change', readTokenValues);
+</script>
