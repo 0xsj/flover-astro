@@ -6,9 +6,12 @@ architecture and behavior of [`flover-next`](../flover-next/) and
 
 This directory is being ported incrementally. The current state is the Astro
 starter with server output, the Node adapter, the global token/cascade layer,
-and the project documentation contract; application routes, the component
-library, portable services, and verification tooling have not been ported yet.
-The README must remain explicit about that state.
+the kernel, HTTP, diagnostics, chaos, composition root, server boundary, and
+the session, ledger, example, access, and jobs service contracts. It also now
+has validated storage, URL-state, runtime state machines, and a native browser
+preference binding. Application routes, cookbook/runtime examples, and most
+verification tooling have not been ported yet. The README must remain explicit
+about that state.
 
 ## Start
 
@@ -24,7 +27,8 @@ yarn install
 yarn dev
 ```
 
-The current starter exposes only `/`. The background-server form used during
+The current starter exposes the landing page, kitchen sink routes, and the
+first session/activity API endpoints. The background-server form used during
 longer work is:
 
 ```sh

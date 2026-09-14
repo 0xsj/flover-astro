@@ -19,6 +19,7 @@ import '../styles/utility.css';
 import '../styles/overlays.css';
 import '../styles/display.css';
 import '../styles/base.css';
+import { RUNTIME_BOOT_SCRIPT } from '../lib/runtime';
 
 interface Props {
 	title?: string;
@@ -41,6 +42,7 @@ const {
 		<meta name="description" content={description} />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title}</title>
+		<script is:inline set:html={RUNTIME_BOOT_SCRIPT}></script>
 	</head>
 	<body>
 		<slot />
