@@ -1,0 +1,34 @@
+---
+import '../../styles/charts.css';
+import type { ChartTone } from './types';
+
+export type BarDatum = { label: string; value: number | null };
+
+interface Props {
+	label: string;
+	data: readonly BarDatum[];
+	tone?: ChartTone;
+	formatValue?: (value: number) => string;
+}
+
+const { label, data, tone = 'accent', formatValue = String } = Astro.props;
+const valid = (value: number | null): value is number => value !== null && Number.isFinite(value) && value >= 0;
+const maximum = data.reduce((max, item) => (valid(item.value) ? Math.max(max, item.value) : max), 0);
+const toneClass = `chartSeries${tone[0].toUpperCase()}${tone.slice(1)}`;
+---
+
+<section aria-label={label} class="chartBars">
+	{data.length === 0 ? (
+		<p class="chartEmpty">No measurements to display.</p>
+	) : (
+		<ul class="chartBarList">
+			{data.map((item) => (
+				<li class="chartBarRow">
+					<span class="chartBarLabel">{item.label}</span>
+					<span class="chartBarTrack" aria-hidden="true"><span class:list={['chartBarFill', toneClass]} style={`width:${valid(item.value) && maximum > 0 ? (item.value / maximum) * 100 : 0}%`}></span></span>
+					<span class="chartBarValue">{valid(item.value) ? formatValue(item.value) : 'Unavailable'}</span>
+				</li>
+			))}
+		</ul>
+	)}
+</section>

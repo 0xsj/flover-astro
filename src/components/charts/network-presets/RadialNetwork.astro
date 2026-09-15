@@ -1,0 +1,9 @@
+---
+import GraphFrame from '../GraphFrame.astro';
+import type { GraphFrameProps } from '../../../lib/charts';
+
+type Props = Omit<GraphFrameProps, 'layout' | 'rootId'> & { rootId: string };
+const { nodes, edges, width, height, rootId, ...rest } = Astro.props as Props;
+---
+
+<GraphFrame {...rest} {nodes} {edges} {width} {height} {rootId} layout="concentric" title="Radial network" />

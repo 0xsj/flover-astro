@@ -1,0 +1,23 @@
+---
+import Text from '../../../../components/typography/Text.astro';
+import NavLink from '../../../../components/navigation/NavLink.astro';
+import { chapters, manualHref } from '../_lib/chapters';
+
+interface Props { current?: string; }
+const { current } = Astro.props;
+---
+
+<nav aria-label="Manual chapters" class="manualChapterNav">
+	<Text size="sm" tone="muted">USER MANUAL</Text>
+	<NavLink href="/cookbook/manual" active={!current}>Overview</NavLink>
+	<ol>
+		{chapters.map((chapter, index) => (
+			<li>
+				<NavLink href={manualHref(chapter.slug)} active={current === chapter.slug}>
+					<span class="manualChapterNumber" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>{chapter.title}
+				</NavLink>
+			</li>
+		))}
+	</ol>
+	<a href="/cookbook/manual/download" download="flover-astro-manual.md" class="manualDownload">Download Markdown</a>
+</nav>

@@ -1,0 +1,45 @@
+---
+import '../../styles/charts.css';
+import ChartData from './ChartData.astro';
+import PlotFrame from './PlotFrame.astro';
+import type { VolcanoPoint } from '../../lib/charts';
+import { extentOf, linear, pad, px } from '../../lib/charts';
+
+interface Props {
+	points: readonly VolcanoPoint[];
+	width?: number;
+	height?: number;
+	effectCut?: number;
+	significanceCut?: number;
+	xLabel?: string;
+	yLabel?: string;
+	labelled?: readonly string[];
+	title?: string;
+}
+
+const { points: supplied, width = 460, height = 320, effectCut = 1, significanceCut = 1.3, xLabel = 'log₂ fold change', yLabel = '−log₁₀ adjusted p', labelled = [], title = 'Volcano plot' } = Astro.props;
+const points = supplied.filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+const margin = { top: 14, right: 18, bottom: 38, left: 48 };
+const plotWidth = width - margin.left - margin.right;
+const plotHeight = height - margin.top - margin.bottom;
+const x = linear(pad(extentOf(points.map((point) => point.x))), [0, plotWidth]);
+const y = linear(pad([0, Math.max(...points.map((point) => point.y), significanceCut)]), [plotHeight, 0]);
+const named = new Set(labelled);
+const stateOf = (point: VolcanoPoint) => point.y < significanceCut ? 'quiet' : point.x >= effectCut ? 'up' : point.x <= -effectCut ? 'down' : 'quiet';
+const description = (point: VolcanoPoint) => `${point.label ?? point.id} · ${point.x.toFixed(2)} · ${point.y.toFixed(2)}`;
+---
+
+{points.length ? (
+	<PlotFrame {width} {height} margin={margin} {x} {y} {xLabel} {yLabel} title={title} rules={[{ y: significanceCut }, { x: effectCut }, { x: -effectCut }]}>
+		{points.map((point) => <circle class="chartPoint" data-state={stateOf(point)} cx={px(x(point.x))} cy={px(y(point.y))} r={stateOf(point) === 'quiet' ? 2 : 2.9}><title>{description(point)}</title></circle>)}
+		{points.filter((point) => named.has(point.id)).map((point) => <text class="chartPointLabel" x={px(x(point.x) + 5)} y={px(y(point.y) + 3)}>{point.label ?? point.id}</text>)}
+	</PlotFrame>
+) : <p class="chartMarkMessage">{supplied.length ? 'Measurements unavailable.' : 'No measurements to display.'}</p>}
+
+<ChartData title={title}>
+	<table class="displayTable">
+		<caption class="displayTableCaption">{title}</caption>
+		<thead class="displayTableHead"><tr class="displayTableRow"><th class="displayTableTh">Point</th><th class="displayTableTh displayTableNumeric">{xLabel}</th><th class="displayTableTh displayTableNumeric">{yLabel}</th><th class="displayTableTh">Threshold</th></tr></thead>
+		<tbody>{supplied.map((point) => <tr class="displayTableRow"><th scope="row" class="displayTableTh">{point.label ?? point.id}</th><td class="displayTableTd displayTableNumeric">{Number.isFinite(point.x) ? String(point.x) : 'Unavailable'}</td><td class="displayTableTd displayTableNumeric">{Number.isFinite(point.y) ? String(point.y) : 'Unavailable'}</td><td class="displayTableTd">{!Number.isFinite(point.x) || !Number.isFinite(point.y) ? 'Unavailable' : point.y >= significanceCut && Math.abs(point.x) >= effectCut ? point.x >= 0 ? 'Positive' : 'Negative' : 'Below threshold'}</td></tr>)}</tbody>
+	</table>
+</ChartData>

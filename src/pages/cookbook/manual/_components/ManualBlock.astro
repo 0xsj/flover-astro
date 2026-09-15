@@ -1,0 +1,36 @@
+---
+import Alert from '../../../../components/feedback/Alert.astro';
+import Text from '../../../../components/typography/Text.astro';
+import type { ManualBlock as Block } from '../_lib/types';
+
+interface Props { block: Block; }
+const { block } = Astro.props;
+---
+
+{block.kind === 'text' && <Text class="manualParagraph">{block.text}</Text>}
+{block.kind === 'list' && <ul class="manualList">{block.items.map((item) => <li>{item}</li>)}</ul>}
+{block.kind === 'code' && (
+	<figure class="manualExample">
+		<figcaption>{block.label}</figcaption>
+		<pre tabindex="0" role="region" aria-label={block.label}><code>{block.code}</code></pre>
+	</figure>
+)}
+{block.kind === 'callout' && <Alert tone="info" title={block.title}>{block.text}</Alert>}
+{block.kind === 'table' && (
+	<div class="manualTableScroll">
+		<table class="manualTable">
+			<caption>{block.caption}</caption>
+			<thead><tr>{block.headings.map((heading) => <th scope="col">{heading}</th>)}</tr></thead>
+			<tbody>{block.rows.map((row) => <tr>{row.map((value, column) => column === 0 ? <th scope="row">{value}</th> : <td>{value}</td>)}</tr>)}</tbody>
+		</table>
+	</div>
+)}
+{block.kind === 'links' && (
+	<ul class="manualRelated">{block.items.map((item) => <li><a href={item.href}>{item.label}</a><Text size="sm" tone="muted">{item.description}</Text></li>)}</ul>
+)}
+{block.kind === 'sources' && (
+	<div class="manualSources">
+		<Text size="sm" weight="medium">Read in the repository</Text>
+		<ul>{block.items.map((item) => <li><code>{item.path}</code><Text size="sm" tone="muted">{item.why}</Text></li>)}</ul>
+	</div>
+)}

@@ -8,10 +8,20 @@ This directory is being ported incrementally. The current state is the Astro
 starter with server output, the Node adapter, the global token/cascade layer,
 the kernel, HTTP, diagnostics, chaos, composition root, server boundary, and
 the session, ledger, example, access, and jobs service contracts. It also now
-has validated storage, URL-state, runtime state machines, and a native browser
-preference binding. Application routes, cookbook/runtime examples, and most
-verification tooling have not been ported yet. The README must remain explicit
-about that state.
+has validated storage, URL-state, runtime state machines, a native browser
+preference binding, isolated cookbook composition roots, and native Astro
+recipe pages for item workflows, session recovery, resilience, access, jobs,
+activity, localization, chaos, diagnostics, failures, and URL state. The
+public cookbook manual and Markdown download are included as well. The
+server-rendered dashboard and editable dashboard are now included too: the
+former uses an isolated service-backed demo account until auth UI is ported,
+and the latter persists a validated layout through the browser document layer.
+The chart family is included as well: pure scales and encodings, semantic chart
+framing, legends, ordinary metric charts, statistical marks, deterministic
+graph/network layouts, reusable presets, and matching kitchen-sink pages. The
+auth UI, most application routes, the shared locale layer, and most verification
+tooling have not been ported yet. The README must remain explicit about that
+state.
 
 ## Start
 

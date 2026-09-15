@@ -1,0 +1,42 @@
+---
+import '../../styles/charts.css';
+import ChartData from './ChartData.astro';
+import PlotFrame from './PlotFrame.astro';
+import type { Bubble } from '../../lib/charts';
+import { categorical, extentOf, linear, pad, px, radiusFor } from '../../lib/charts';
+
+interface Props {
+	bubbles: readonly Bubble[];
+	width?: number;
+	height?: number;
+	xLabel?: string;
+	yLabel?: string;
+	categories?: readonly string[];
+	title?: string;
+}
+
+const { bubbles: supplied, width = 460, height = 320, xLabel, yLabel, categories, title = 'Bubble plot' } = Astro.props;
+const bubbles = supplied.filter((bubble) => Number.isFinite(bubble.x) && Number.isFinite(bubble.y) && Number.isFinite(bubble.weight) && bubble.weight >= 0);
+const margin = { top: 14, right: 22, bottom: 38, left: 48 };
+const plotWidth = width - margin.left - margin.right;
+const plotHeight = height - margin.top - margin.bottom;
+const x = linear(pad(extentOf(bubbles.map((bubble) => bubble.x))), [0, plotWidth]);
+const y = linear(pad(extentOf(bubbles.map((bubble) => bubble.y))), [plotHeight, 0]);
+const weights = extentOf(bubbles.map((bubble) => bubble.weight));
+const order = categories ?? [...new Set(bubbles.map((bubble) => bubble.category ?? ''))];
+const fillOf = (bubble: Bubble) => categorical(order.indexOf(bubble.category ?? '')) ?? 'var(--chart-neutral)';
+---
+
+{bubbles.length ? (
+	<PlotFrame {width} {height} margin={margin} {x} {y} {xLabel} {yLabel} title={title}>
+		{bubbles.map((bubble) => <circle class="chartBubble" cx={px(x(bubble.x))} cy={px(y(bubble.y))} r={px(radiusFor(bubble.weight, weights))} style={`fill:${fillOf(bubble)}`}><title>{`${bubble.label ?? bubble.id} · ${bubble.weight}`}</title></circle>)}
+	</PlotFrame>
+) : <p class="chartMarkMessage">{supplied.length ? 'Measurements unavailable.' : 'No measurements to display.'}</p>}
+
+<ChartData title={title}>
+	<table class="displayTable">
+		<caption class="displayTableCaption">{title}</caption>
+		<thead class="displayTableHead"><tr class="displayTableRow"><th class="displayTableTh">Point</th><th class="displayTableTh">Category</th><th class="displayTableTh displayTableNumeric">{xLabel ?? 'X'}</th><th class="displayTableTh displayTableNumeric">{yLabel ?? 'Y'}</th><th class="displayTableTh displayTableNumeric">Weight</th></tr></thead>
+		<tbody>{supplied.map((bubble) => <tr class="displayTableRow"><th scope="row" class="displayTableTh">{bubble.label ?? bubble.id}</th><td class="displayTableTd">{bubble.category ?? 'Uncategorized'}</td><td class="displayTableTd displayTableNumeric">{Number.isFinite(bubble.x) ? String(bubble.x) : 'Unavailable'}</td><td class="displayTableTd displayTableNumeric">{Number.isFinite(bubble.y) ? String(bubble.y) : 'Unavailable'}</td><td class="displayTableTd displayTableNumeric">{Number.isFinite(bubble.weight) && bubble.weight >= 0 ? String(bubble.weight) : 'Unavailable'}</td></tr>)}</tbody>
+	</table>
+</ChartData>

@@ -1,0 +1,176 @@
+---
+import { Card, CardBody, CardDescription, CardFooter, CardHeader, CardTitle } from '../../../components/display';
+import { Alert } from '../../../components/feedback';
+import { Button } from '../../../components/forms';
+import Container from '../../../components/layout/Container.astro';
+import PageHeader from '../../../components/patterns/PageHeader.astro';
+import Text from '../../../components/typography/Text.astro';
+import CookbookLayout from '../../../layouts/CookbookLayout.astro';
+import '../../../styles/cookbook.css';
+
+const scenarios = [
+	{ mode: 'valid', label: 'Successful read' },
+	{ mode: 'malformed', label: 'Wrong envelope' },
+	{ mode: 'partial', label: 'Malformed list item' },
+	{ mode: 'unavailable', label: 'Transport failure' },
+	{ mode: 'empty', label: 'Empty result' },
+	{ mode: 'held', label: 'Hold response' }
+];
+---
+
+<CookbookLayout
+	title="Diagnostics · Cookbook · flover-astro"
+	description="Follow an interaction through request, decode, recovery, and cancellation."
+>
+	<Container width="page">
+		<PageHeader
+			title="Follow an interaction"
+			description="See where an operation succeeds, fails, or recovers. A transport answer and a usable response are two separate steps."
+		>
+			<Button slot="actions" href="/cookbook" intent="secondary">All recipes</Button>
+		</PageHeader>
+
+		<div class="recipeStack" data-diagnostics-app>
+			<Alert tone="info" title="An isolated, visit-local inspector">These sample reads use the real service and response decoder over memory fixtures. The recorder receives classifications and timing; request contents and failure messages stay out of the timeline.</Alert>
+
+			<Card>
+				<CardHeader>
+					<span slot="actions" class="recipeBadge" data-diagnostics-badge>Sample data</span>
+					<CardTitle level={2}>Drive the request</CardTitle>
+					<CardDescription>A malformed success produces a successful request span followed by a failed decode span.</CardDescription>
+				</CardHeader>
+				<CardBody>
+					<div class="recipeResult" data-diagnostics-data aria-busy="false">
+						<div data-diagnostics-items><Text tone="muted">No successful read yet.</Text></div>
+						<Text size="sm" role="status" aria-atomic="true" data-diagnostics-status>Choose a scenario to begin recording.</Text>
+					</div>
+				</CardBody>
+				<CardFooter>
+					<div class="recipeFormActions">
+						{scenarios.map((scenario) => <Button size="sm" data-diagnostics-scenario={scenario.mode}>{scenario.label}</Button>)}
+						<Button size="sm" data-diagnostics-cancel disabled>Cancel request</Button>
+						<Button size="sm" intent="primary" data-diagnostics-recover disabled>Recover read</Button>
+					</div>
+				</CardFooter>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<span slot="actions" class="recipeBadge" data-diagnostics-count>0 retained</span>
+					<CardTitle level={2}>Interaction timeline</CardTitle>
+					<CardDescription>Ordered by observation. Each span has a start and finish; recording never retries the operation.</CardDescription>
+				</CardHeader>
+				<CardBody>
+					<div class="recipeStack recipeStackTight">
+						<div class="recipeField"><label for="diagnostics-trace">Trace</label><select id="diagnostics-trace" class="recipeSelect" data-diagnostics-trace><option value="all">All traces</option></select></div>
+						<Text size="sm" tone="muted" class="recipeMono" data-diagnostics-correlation hidden></Text>
+						<div class="recipeTableScroll" data-diagnostics-table hidden><table class="displayTable"><caption class="displayTableCaption">Diagnostic events</caption><thead class="displayTableHead"><tr><th class="displayTableTh" scope="col">Event</th><th class="displayTableTh" scope="col">Trace</th><th class="displayTableTh" scope="col">Stage</th><th class="displayTableTh" scope="col">Outcome</th><th class="displayTableTh" scope="col">Duration</th><th class="displayTableTh" scope="col">Classification</th></tr></thead><tbody data-diagnostics-entries></tbody></table></div>
+						<div class="displayEmpty" data-diagnostics-empty><p class="displayEmptyTitle">No recorded steps</p><p class="displayEmptyBody">Run a scenario to see the path from interaction to request, decoding, and outcome.</p></div>
+						<Text size="sm" tone="muted" data-diagnostics-retention>0 of 120 records retained · 0 older records evicted. Clear or leave this page to discard the local history.</Text>
+					</div>
+				</CardBody>
+				<CardFooter><Button size="sm" data-diagnostics-clear disabled>Clear timeline</Button></CardFooter>
+			</Card>
+		</div>
+	</Container>
+</CookbookLayout>
+
+<script>
+	import { createMemoryDiagnostics, createTrace } from '../../../lib/diagnostics';
+	import { beginInteraction } from '../../../lib/runtime';
+	import { createLatestRead } from '../../../lib/runtime/latest-read';
+	import { readResponseExample } from '../../../lib/root/resilience';
+
+	const app = document.querySelector('[data-diagnostics-app]');
+	if (app instanceof HTMLElement) {
+		const buffer = createMemoryDiagnostics({ capacity: 120 });
+		const reader = createLatestRead(async (input, signal) => {
+			const trace = createTrace(buffer.port, { operation: input.recovery ? 'items.recover' : 'items.load', correlationId: beginInteraction() });
+			return trace.run(input.recovery ? 'recovery' : 'operation', () => readResponseExample(input.mode, signal, trace));
+		});
+		let canceled = false;
+		let selectedTrace = 'all';
+		const text = (selector, value) => { const node = app.querySelector(selector); if (node) node.textContent = value; };
+		const tone = (selector, value) => { const node = app.querySelector(selector); if (!(node instanceof HTMLElement)) return; if (value) node.dataset.tone = value; else delete node.dataset.tone; };
+		const setHidden = (selector, value) => { const node = app.querySelector(selector); if (node instanceof HTMLElement) node.hidden = value; };
+		const appendCell = (row, value, className = '') => { const cell = document.createElement('td'); cell.className = `displayTableTd ${className}`.trim(); cell.textContent = value; row.append(cell); };
+		const renderTimeline = () => {
+			const snapshot = buffer.get();
+			const traces = [...new Map(snapshot.entries.map(({ event }) => [event.traceId, event])).values()];
+			if (!traces.some((trace) => trace.traceId === selectedTrace)) selectedTrace = 'all';
+			const select = app.querySelector('[data-diagnostics-trace]');
+			if (select instanceof HTMLSelectElement) {
+				select.replaceChildren();
+				const all = document.createElement('option'); all.value = 'all'; all.textContent = 'All traces'; select.append(all);
+				for (const trace of traces) { const option = document.createElement('option'); option.value = trace.traceId; option.textContent = `${trace.operation} · ${trace.traceId.slice(0, 8)}`; select.append(option); }
+				select.value = selectedTrace;
+			}
+			const entries = snapshot.entries.filter(({ event }) => selectedTrace === 'all' || event.traceId === selectedTrace);
+			const active = traces.find((trace) => trace.traceId === selectedTrace);
+			text('[data-diagnostics-correlation]', active ? `Correlation: ${active.correlationId}` : '');
+			setHidden('[data-diagnostics-correlation]', !active);
+			const tbody = app.querySelector('[data-diagnostics-entries]');
+			if (tbody instanceof HTMLElement) {
+				tbody.replaceChildren();
+				for (const entry of entries) {
+					const row = document.createElement('tr'); row.className = 'displayTableRow';
+					const event = entry.event;
+					appendCell(row, String(entry.sequence), 'recipeMono');
+					const trace = document.createElement('td'); trace.className = 'displayTableTd';
+					const operation = document.createElement('div'); operation.textContent = event.operation; operation.className = 'recipeTableMeta';
+					const traceId = document.createElement('div'); traceId.textContent = event.traceId.slice(0, 8); traceId.className = 'recipeMono';
+					trace.append(operation, traceId); row.append(trace);
+					appendCell(row, event.stage);
+					appendCell(row, event.event === 'started' ? 'Started' : event.outcome);
+					appendCell(row, event.event === 'finished' ? `${Math.round(event.durationMs)} ms` : '–', 'recipeMono');
+					if (event.event === 'finished' && event.outcome !== 'success') {
+						const cell = document.createElement('td'); cell.className = 'displayTableTd';
+						cell.textContent = `${event.failure.kind}${event.failure.contractRejected ? ' · contract rejected' : ''}${event.failure.causes.length ? ` · causes: ${event.failure.causes.join(' → ')}` : ''}`;
+						row.append(cell);
+					} else appendCell(row, '–');
+					tbody.append(row);
+				}
+			}
+			setHidden('[data-diagnostics-table]', entries.length === 0);
+			setHidden('[data-diagnostics-empty]', entries.length !== 0);
+			text('[data-diagnostics-count]', `${snapshot.entries.length} retained`);
+			text('[data-diagnostics-retention]', `${snapshot.entries.length} of ${buffer.capacity} records retained · ${snapshot.dropped} older records evicted. Clear or leave this page to discard the local history.`);
+			const clear = app.querySelector('[data-diagnostics-clear]');
+			if (clear instanceof HTMLButtonElement) clear.disabled = snapshot.entries.length === 0;
+		};
+		const render = () => {
+			const state = reader.get();
+			const pending = state.state === 'pending';
+			const data = state.state === 'ready' ? state.value : state.state === 'idle' ? undefined : state.previous;
+			text('[data-diagnostics-badge]', pending ? 'In progress' : state.state === 'failed' ? 'Read failed' : 'Sample data');
+			tone('[data-diagnostics-badge]', pending ? 'accent' : state.state === 'failed' ? 'warn' : '');
+			const dataHost = app.querySelector('[data-diagnostics-items]');
+			if (dataHost instanceof HTMLElement) {
+				dataHost.replaceChildren();
+				if (data === undefined) { const node = document.createElement('span'); node.className = 'recipeTableMeta'; node.textContent = 'No successful read yet.'; dataHost.append(node); }
+				else if (data.length === 0) { const node = document.createElement('span'); node.textContent = 'The request succeeded. No items were found.'; dataHost.append(node); }
+				else for (const item of data) { const row = document.createElement('div'); row.className = 'recipeResultItem'; const name = document.createElement('span'); name.textContent = item.name; const host = document.createElement('small'); host.textContent = item.host; row.append(name, host); dataHost.append(row); }
+			}
+			const status = canceled ? 'Request canceled. The last settled view is retained.' : pending ? 'Request in progress. A held response waits until you cancel it.' : state.state === 'failed' ? `Read failed: ${state.failure.kind}. ${data === undefined ? 'No data has been accepted.' : 'Previous data remains visible and may be stale.'}` : state.state === 'ready' ? 'Read completed. Inspect the request and decode steps below.' : 'Choose a scenario to begin recording.';
+			text('[data-diagnostics-status]', status);
+			const dataRegion = app.querySelector('[data-diagnostics-data]');
+			if (dataRegion instanceof HTMLElement) dataRegion.setAttribute('aria-busy', String(pending));
+			app.querySelectorAll('[data-diagnostics-scenario]').forEach((button) => { if (button instanceof HTMLButtonElement) button.disabled = pending; });
+			const cancel = app.querySelector('[data-diagnostics-cancel]');
+			if (cancel instanceof HTMLButtonElement) cancel.disabled = !pending;
+			const recover = app.querySelector('[data-diagnostics-recover]');
+			if (recover instanceof HTMLButtonElement) recover.disabled = pending || (state.state !== 'failed' && !canceled);
+			renderTimeline();
+		};
+		const run = (mode, recovery = false) => { canceled = false; void reader.run({ mode, recovery }); };
+		app.querySelectorAll('[data-diagnostics-scenario]').forEach((button) => button.addEventListener('click', () => { if (button instanceof HTMLElement) run(button.dataset.diagnosticsScenario); }));
+		app.querySelector('[data-diagnostics-cancel]')?.addEventListener('click', () => { reader.cancel(); canceled = true; render(); });
+		app.querySelector('[data-diagnostics-recover]')?.addEventListener('click', () => run('valid', true));
+		app.querySelector('[data-diagnostics-clear]')?.addEventListener('click', () => { buffer.clear(); selectedTrace = 'all'; render(); });
+		app.querySelector('[data-diagnostics-trace]')?.addEventListener('change', (event) => { if (event.currentTarget instanceof HTMLSelectElement) { selectedTrace = event.currentTarget.value; renderTimeline(); } });
+		const unsubscribeBuffer = buffer.subscribe(render);
+		const unsubscribeReader = reader.subscribe(render);
+		render();
+		window.addEventListener('pagehide', () => { unsubscribeBuffer(); unsubscribeReader(); reader.cancel(); }, { once: true });
+	}
+</script>

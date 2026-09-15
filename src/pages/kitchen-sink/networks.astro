@@ -1,0 +1,95 @@
+---
+import {
+	BipartiteNetwork,
+	CircularNetwork,
+	CliqueNetwork,
+	CorrelationNetwork,
+	EnrichmentMap,
+	FlowNetwork,
+	ForceNetwork,
+	GraphFrame,
+	HairballNetwork,
+	ModuleNetwork,
+	MultipartiteNetwork,
+	RadialNetwork
+} from '../../components/charts';
+import { Card, CardBody, CardTitle, Panel } from '../../components/display';
+import Case from '../../components/kitchen-sink/Case.astro';
+import Section from '../../components/kitchen-sink/Section.astro';
+import Text from '../../components/typography/Text.astro';
+import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
+import graphSource from '../../components/charts/GraphFrame.astro?raw';
+import layoutSource from '../../lib/charts/layout.ts?raw';
+import {
+	bipartiteEdges,
+	bipartiteNodes,
+	correlationEdges,
+	correlationNodes,
+	flowEdges,
+	flowNodes,
+	moduleHulls,
+	networkEdges,
+	networkNodes
+} from '../../lib/charts';
+
+const groupOrder = ['source', 'process', 'output'];
+const pinned = new Map([['core', { x: 300, y: 150 }]]);
+---
+
+<KitchenSinkLayout title="Networks · flover-astro" description="Deterministic graph layouts and reusable network presets.">
+	<Section
+		id="networks"
+		title="Networks"
+		blurb="A dependency-free graph frame with deterministic layouts, semantic edge channels, optional hulls, and keyboard-accessible selection. The examples use small illustrative datasets so the geometry stays inspectable."
+	>
+		<Case title="Force and radial" note="stable positions, ignored dangling edges, pins, and selection" source={['src/components/charts/GraphFrame.astro', 'src/lib/charts/layout.ts']}>
+			<div data-network-selection>
+				<ForceNetwork nodes={networkNodes} edges={networkEdges} width={620} height={300} pins={pinned} selectable selected="core" />
+				<Text size="sm" tone="muted" data-network-selection-status>Select a node with a pointer, Enter, Space, or the data table.</Text>
+			</div>
+			<div class="chartExamplesGrid">
+				<Panel title="Radial"><RadialNetwork nodes={networkNodes} edges={networkEdges} width={460} height={280} rootId="core" labels /></Panel>
+				<Panel title="Pinned radial"><GraphFrame nodes={networkNodes.slice(0, 5)} edges={networkEdges.slice(0, 5)} width={460} height={280} layout="concentric" rootId="core" pins={pinned} /></Panel>
+			</div>
+			<pre slot="source" class="code"><code>{`${graphSource}\n\n${layoutSource}`}</code></pre>
+		</Case>
+
+		<Case title="Grouped layouts" note="bipartite and multipartite share one tiered placement; flow uses longest source paths">
+			<div class="chartExamplesGrid">
+				<Panel title="Bipartite"><BipartiteNetwork nodes={bipartiteNodes} edges={bipartiteEdges} width={440} height={250} groupOrder={['people', 'papers']} /></Panel>
+				<Panel title="Multipartite"><MultipartiteNetwork nodes={networkNodes} edges={networkEdges} width={440} height={250} groupOrder={groupOrder} /></Panel>
+				<Panel title="Flow"><FlowNetwork nodes={flowNodes} edges={flowEdges} width={440} height={250} /></Panel>
+			</div>
+		</Case>
+
+		<Case title="Topology presets" note="the preset family is a small API over GraphFrame">
+			<div class="chartExamplesGrid">
+				<Panel title="Circular"><CircularNetwork nodes={networkNodes} edges={networkEdges} width={440} height={240} /></Panel>
+				<Panel title="Clique"><CliqueNetwork nodes={networkNodes.slice(0, 6)} edges={networkEdges.slice(0, 6)} width={440} height={240} /></Panel>
+				<Panel title="Hairball"><HairballNetwork nodes={correlationNodes} edges={correlationEdges} width={440} height={240} /></Panel>
+			</div>
+		</Case>
+
+		<Case title="Semantic network variants" note="signed correlations and translucent module hulls">
+			<div class="chartExamplesGrid">
+				<Panel title="Correlation"><CorrelationNetwork nodes={correlationNodes} edges={correlationEdges} width={440} height={260} /></Panel>
+				<Panel title="Enrichment map"><EnrichmentMap nodes={correlationNodes} edges={correlationEdges} hulls={moduleHulls} width={440} height={260} /></Panel>
+				<Panel title="Module network"><ModuleNetwork nodes={correlationNodes} edges={correlationEdges} hulls={moduleHulls} width={440} height={260} /></Panel>
+			</div>
+		</Case>
+
+		<Card>
+			<CardBody><CardTitle level={2}>Port boundary</CardTitle><p class="limits">The sibling CoSE preset is represented by the native seeded force layout here, so Astro stays dependency-free and server-renderable. A Cytoscape adapter can be added later without changing the GraphFrame or preset contracts.</p></CardBody>
+		</Card>
+	</Section>
+</KitchenSinkLayout>
+
+<script>
+	const selection = document.querySelector('[data-network-selection]');
+	const status = selection?.querySelector('[data-network-selection-status]');
+	selection?.addEventListener('astro-graph-select', (event) => {
+		if (!(status instanceof HTMLElement)) return;
+		const id = event.detail?.id;
+		status.textContent = id ? `Selected ${id}. Neighbours remain bright; other nodes are dimmed.` : 'Selection cleared.';
+	});
+</script>

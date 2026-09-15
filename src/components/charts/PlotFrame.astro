@@ -1,0 +1,57 @@
+---
+import '../../styles/charts.css';
+import type { Scale } from '../../lib/charts';
+import { px } from '../../lib/charts';
+
+export type PlotMargin = { top: number; right: number; bottom: number; left: number };
+export const DEFAULT_PLOT_MARGIN: PlotMargin = { top: 14, right: 18, bottom: 38, left: 48 };
+
+interface Props {
+	width: number;
+	height: number;
+	margin?: Partial<PlotMargin>;
+	x?: Scale;
+	y?: Scale;
+	xLabel?: string;
+	yLabel?: string;
+	rules?: readonly { y?: number; x?: number; label?: string }[];
+	grid?: boolean;
+	title: string;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { width, height, margin: partial, x, y, xLabel, yLabel, rules = [], grid = true, title, class: className, ...rest } = Astro.props;
+const margin = { ...DEFAULT_PLOT_MARGIN, ...partial };
+const plotWidth = Math.max(1, width - margin.left - margin.right);
+const plotHeight = Math.max(1, height - margin.top - margin.bottom);
+const format = (value: number): string => {
+	if (value === 0) return '0';
+	const absolute = Math.abs(value);
+	if (absolute < 0.01) return value.toExponential(2);
+	if (absolute >= 1e6) return `${(value / 1e6).toFixed(absolute >= 1e7 ? 0 : 1)}M`;
+	if (absolute >= 1e3) return `${(value / 1e3).toFixed(absolute >= 1e4 ? 0 : 1)}k`;
+	if (absolute >= 10) return value.toFixed(0);
+	if (absolute >= 1) return value.toFixed(1);
+	return value.toFixed(2);
+};
+---
+
+<div class="plotViewport" role="region" aria-label={`${title} plot`} tabindex="0">
+	<svg {...rest} viewBox={`0 0 ${px(width)} ${px(height)}`} width={px(width)} height={px(height)} class:list={['plotFrame', className]} role="img" aria-label={title}>
+		<title>{title}</title>
+		<g transform={`translate(${px(margin.left)} ${px(margin.top)})`}>
+			{grid && y?.ticks().map((tick) => <line class="plotGrid" x1="0" x2={px(plotWidth)} y1={px(y(tick))} y2={px(y(tick))}></line>)}
+			{grid && x?.ticks().map((tick) => <line class="plotGrid" y1="0" y2={px(plotHeight)} x1={px(x(tick))} x2={px(x(tick))}></line>)}
+			{rules.map((rule) => rule.y !== undefined && y ? <line class="plotRule" x1="0" x2={px(plotWidth)} y1={px(y(rule.y))} y2={px(y(rule.y))}></line> : rule.x !== undefined && x ? <line class="plotRule" y1="0" y2={px(plotHeight)} x1={px(x(rule.x))} x2={px(x(rule.x))}></line> : null)}
+			<slot />
+			<line class="plotAxis" x1="0" y1={px(plotHeight)} x2={px(plotWidth)} y2={px(plotHeight)}></line>
+			<line class="plotAxis" x1="0" y1="0" x2="0" y2={px(plotHeight)}></line>
+			{x?.ticks().map((tick) => <text class="plotTick" x={px(x(tick))} y={px(plotHeight + 15)} text-anchor="middle">{format(tick)}</text>)}
+			{y?.ticks().map((tick) => <text class="plotTick" x="-8" y={px(y(tick) + 3.5)} text-anchor="end">{format(tick)}</text>)}
+			{Astro.slots.has('overlay') && <slot name="overlay" />}
+		</g>
+		{xLabel && <text class="plotAxisLabel" x={px(margin.left + plotWidth / 2)} y={px(height - 4)} text-anchor="middle">{xLabel}</text>}
+		{yLabel && <text class="plotAxisLabel" transform={`translate(11 ${px(margin.top + plotHeight / 2)}) rotate(-90)`} text-anchor="middle">{yLabel}</text>}
+	</svg>
+</div>

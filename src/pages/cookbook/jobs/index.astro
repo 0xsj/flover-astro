@@ -1,0 +1,206 @@
+---
+import { Card, CardBody, CardDescription, CardHeader, CardTitle } from '../../../components/display';
+import { Button } from '../../../components/forms';
+import Container from '../../../components/layout/Container.astro';
+import PageHeader from '../../../components/patterns/PageHeader.astro';
+import Text from '../../../components/typography/Text.astro';
+import CookbookLayout from '../../../layouts/CookbookLayout.astro';
+import '../../../styles/cookbook.css';
+---
+
+<CookbookLayout
+	title="Jobs · Cookbook · flover-astro"
+	description="Observe long-running work, reconnect to revisions, and keep cancellation separate from observation."
+>
+	<Container width="page">
+		<PageHeader
+			title="Follow work that outlives a request"
+			description="Observe an import or export, reconnect to its latest state, and distinguish stopping observation from requesting cancellation."
+		>
+			<Button slot="actions" href="/cookbook" intent="secondary">All recipes</Button>
+		</PageHeader>
+
+		<div class="recipeStack" data-jobs-app>
+			<div class="recipeToolbar">
+				<div class="recipeField">
+					<label for="job-kind">Example job</label>
+					<select id="job-kind" class="recipeSelect" data-job-kind>
+						<option value="export">Export records</option>
+						<option value="import">Import records</option>
+					</select>
+				</div>
+				<Button data-job-reset>Reset job simulation</Button>
+			</div>
+
+			<div class="recipeGrid">
+				<Card class="recipePanel">
+					<CardHeader>
+						<span slot="actions" class="recipeBadge" data-job-badge>Loading</span>
+						<CardTitle level={2} data-job-title>Records export</CardTitle>
+						<CardDescription data-job-description>Reading the first snapshot.</CardDescription>
+					</CardHeader>
+					<CardBody>
+						<div class="recipeResult" data-job-result role="status" aria-live="polite">
+							<div data-job-copy>Reading the first snapshot.</div>
+							<progress class="progress recipeProgress" data-job-progress max="100" aria-label="Job progress"></progress>
+							<div class="recipeFormActions">
+								<Button data-job-watch>Stop watching</Button>
+								<Button data-job-refresh>Refresh job</Button>
+								<Button intent="danger" data-job-cancel>Request cancellation</Button>
+							</div>
+							<div class="recipeStatus" data-job-status>Watching for job changes.</div>
+							<div class="recipeNotice" data-job-notice hidden></div>
+						</div>
+					</CardBody>
+				</Card>
+
+				<Card class="recipePanel">
+					<CardHeader>
+						<CardTitle level={2}>Advance the simulated server</CardTitle>
+						<CardDescription>Each step changes the job independently of whether this page is watching. Events prompt a fresh read.</CardDescription>
+					</CardHeader>
+					<CardBody>
+						<div class="recipeFormActions">
+							<Button data-job-advance>Advance server job</Button>
+							<Button data-job-fail>Fail server job</Button>
+							<Button data-job-connect>Disconnect</Button>
+						</div>
+						<div class="recipeField">
+							<label for="job-cancel-mode">Cancellation behavior</label>
+							<select id="job-cancel-mode" class="recipeSelect" data-job-cancel-mode>
+								<option value="accept">Accept, then stop on next server step</option>
+								<option value="lost-response">Accept, but lose the acknowledgment</option>
+								<option value="complete-first">Completion wins the race</option>
+							</select>
+						</div>
+						<Text size="sm" tone="muted">Queued → running with unknown progress → measured progress → completed. An accepted cancellation takes effect on the next server step.</Text>
+					</CardBody>
+				</Card>
+			</div>
+
+			<Text size="sm" tone="muted">Frontend: treat events as refresh hints, reject stale snapshots, and keep cancellation separate from observation. Backend: authorize job ownership, persist status and revisions, and report cancellation truthfully. This recipe observes a pre-existing simulated job; starting jobs and delivering files remain product-specific adapter work.</Text>
+		</div>
+	</Container>
+</CookbookLayout>
+
+<script>
+	import { createJobExample } from '../../../lib/root/jobs';
+	import { createJobObserver } from '../../../lib/runtime/job-observer';
+	import { terminalJob } from '../../../lib/services/jobs';
+
+	const app = document.querySelector('[data-jobs-app]');
+	if (app instanceof HTMLElement) {
+		const kindSelect = app.querySelector('[data-job-kind]');
+		const modeSelect = app.querySelector('[data-job-cancel-mode]');
+		let root;
+		let model;
+		let unsubscribeRoot = () => {};
+		let unsubscribeModel = () => {};
+		let connected = true;
+
+		const text = (selector, value) => {
+			const node = app.querySelector(selector);
+			if (node) node.textContent = value;
+		};
+		const hidden = (selector, value) => {
+			const node = app.querySelector(selector);
+			if (node instanceof HTMLElement) node.hidden = value;
+		};
+		const tone = (selector, value) => {
+			const node = app.querySelector(selector);
+			if (!(node instanceof HTMLElement)) return;
+			if (value) node.dataset.tone = value;
+			else delete node.dataset.tone;
+		};
+		const render = () => {
+			if (!model || !root) return;
+			const state = model.get();
+			const job = state.job;
+			const terminal = Boolean(job && terminalJob(job));
+			const title = job?.kind === 'import' ? 'Records import' : 'Records export';
+			text('[data-job-title]', title);
+			text('[data-job-description]', job ? `Job ${root.id}. Last accepted revision: ${job.revision}.` : 'Reading the first snapshot.');
+			text('[data-job-badge]', job?.state ?? 'Loading');
+			tone('[data-job-badge]', job?.state === 'failed' ? 'warn' : job?.state === 'completed' ? 'accent' : job?.state === 'canceled' ? 'warn' : '');
+			const progress = app.querySelector('[data-job-progress]');
+			if (progress instanceof HTMLProgressElement) {
+				if (job?.state === 'running' && job.progress !== null) progress.value = job.progress;
+				else progress.removeAttribute('value');
+				progress.hidden = job?.state !== 'running';
+			}
+			let copy = 'Reading the first snapshot.';
+			if (job?.state === 'queued') copy = 'Queued. No progress has been measured.';
+			if (job?.state === 'running') copy = job.progress === null ? 'Running · progress has not been measured.' : `${job.progress}% measured progress.`;
+			if (job?.state === 'completed') copy = `Job completed: ${job.summary}`;
+			if (job?.state === 'failed') copy = `Job failed: ${job.reason}`;
+			if (job?.state === 'canceled') copy = 'Cancellation confirmed. The server reports that this job was canceled.';
+			text('[data-job-copy]', copy);
+			text('[data-job-status]', !state.watching ? 'Observation stopped. The job may still be running.' : state.refreshing ? 'Reading the current job state…' : !connected || state.failure ? 'The last accepted snapshot may be out of date.' : 'Watching for job changes.');
+			const notice = app.querySelector('[data-job-notice]');
+			if (notice instanceof HTMLElement) {
+				const message = state.failure
+					? `Job refresh failed: ${state.failure.message}`
+					: state.cancellation === 'pending'
+						? 'Waiting for a cancellation acknowledgment.'
+						: state.cancellation === 'accepted'
+							? 'Cancellation accepted. Keep watching for the final job state; completion may still win the race.'
+							: state.cancellation === 'too-late'
+								? 'The job finished before cancellation could be accepted.'
+								: state.cancellation === 'unknown'
+									? `The cancellation outcome is unknown. Refresh status; do not assume the job stopped.${state.cancelFailure ? ` ${state.cancelFailure.message}` : ''}`
+									: '';
+				notice.hidden = !message;
+				notice.textContent = message;
+				notice.dataset.tone = state.failure ? 'warn' : state.cancellation === 'unknown' ? 'danger' : '';
+			}
+			const watchButton = app.querySelector('[data-job-watch]');
+			const refreshButton = app.querySelector('[data-job-refresh]');
+			const cancelButton = app.querySelector('[data-job-cancel]');
+			if (watchButton instanceof HTMLButtonElement) watchButton.textContent = state.watching ? 'Stop watching' : 'Resume watching';
+			if (refreshButton instanceof HTMLButtonElement) refreshButton.disabled = !state.watching || state.refreshing;
+			if (cancelButton instanceof HTMLButtonElement) cancelButton.disabled = !job || terminal || state.cancellation !== 'idle';
+			const connectButton = app.querySelector('[data-job-connect]');
+			if (connectButton instanceof HTMLButtonElement) connectButton.textContent = connected ? 'Disconnect' : 'Reconnect';
+		};
+		const reset = (kind) => {
+			unsubscribeRoot();
+			unsubscribeModel();
+			model?.dispose();
+			root = createJobExample(kind, 180);
+			model = createJobObserver(root.id, root);
+			connected = true;
+			unsubscribeRoot = root.subscribe(() => void model.hint());
+			unsubscribeModel = model.subscribe(render);
+			const mode = modeSelect instanceof HTMLSelectElement ? modeSelect.value : 'accept';
+			root.setCancelMode(mode);
+			render();
+			void model.start();
+		};
+
+		kindSelect?.addEventListener('change', () => reset(kindSelect instanceof HTMLSelectElement ? kindSelect.value : 'export'));
+		app.querySelector('[data-job-reset]')?.addEventListener('click', () => reset(kindSelect instanceof HTMLSelectElement ? kindSelect.value : 'export'));
+		app.querySelector('[data-job-watch]')?.addEventListener('click', () => {
+			if (model.get().watching) model.stop();
+			else void model.start();
+		});
+		app.querySelector('[data-job-refresh]')?.addEventListener('click', () => void model.refresh());
+		app.querySelector('[data-job-cancel]')?.addEventListener('click', () => void model.cancel());
+		app.querySelector('[data-job-advance]')?.addEventListener('click', () => root.advance());
+		app.querySelector('[data-job-fail]')?.addEventListener('click', () => root.fail());
+		app.querySelector('[data-job-connect]')?.addEventListener('click', () => {
+			connected = !connected;
+			root.connect(connected);
+			if (!connected) void model.refresh();
+			render();
+		});
+		modeSelect?.addEventListener('change', () => {
+			if (modeSelect instanceof HTMLSelectElement) root.setCancelMode(modeSelect.value);
+		});
+		reset(kindSelect instanceof HTMLSelectElement ? kindSelect.value : 'export');
+		window.addEventListener('pagehide', () => {
+			unsubscribeRoot();
+			unsubscribeModel();
+			model?.dispose();
+		}, { once: true });
+	}
+</script>

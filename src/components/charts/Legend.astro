@@ -1,0 +1,15 @@
+---
+import '../../styles/charts.css';
+import { shapePath, type LegendItem } from '../../lib/charts';
+
+interface Props {
+	items: readonly LegendItem[];
+	class?: string;
+}
+
+const { items, class: className } = Astro.props;
+---
+
+{items.length >= 2 && <ul class:list={['chartCategoryLegend', className]} aria-label="Chart categories">
+	{items.map((item) => <li><svg viewBox="-8 -8 16 16" aria-hidden="true" class="chartCategorySwatch"><path d={shapePath(item.shape ?? 'circle', 5)} style={`fill:${item.fill ?? 'var(--chart-grid)'}`}></path></svg>{item.label}</li>)}
+</ul>}

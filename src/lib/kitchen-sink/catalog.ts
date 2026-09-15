@@ -43,6 +43,24 @@ export const CATALOG = [
 		description: 'Panels, stats, badges, avatars, and structured details.'
 	},
 	{
+		id: 'charts',
+		label: 'Charts',
+		group: 'Primitives',
+		description: 'Dependency-free metric charts with legends, loading boundaries, and exact data.'
+	},
+	{
+		id: 'statistical-charts',
+		label: 'Statistical charts',
+		group: 'Primitives',
+		description: 'Shared plot axes, statistical marks, color ramps, and absence-aware matrices.'
+	},
+	{
+		id: 'networks',
+		label: 'Networks',
+		group: 'Primitives',
+		description: 'Deterministic graph layouts, semantic edges, hulls, presets, and keyboard selection.'
+	},
+	{
 		id: 'feedback',
 		label: 'Feedback',
 		group: 'Primitives',

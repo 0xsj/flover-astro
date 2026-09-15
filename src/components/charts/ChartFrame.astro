@@ -1,0 +1,25 @@
+---
+import '../../styles/charts.css';
+
+interface Props {
+	title: string;
+	description?: string;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { title, description, class: className, ...rest } = Astro.props;
+---
+
+<figure {...rest} class:list={['chartFrame', className]}>
+	<figcaption class="chartHeader">
+		<div>
+			<div class="chartTitle">{title}</div>
+			{description && <div class="chartDescription">{description}</div>}
+		</div>
+		{Astro.slots.has('actions') && <div class="chartActions"><slot name="actions" /></div>}
+	</figcaption>
+	{Astro.slots.has('legend') && <slot name="legend" />}
+	<div class="chartPlot"><slot /></div>
+	{Astro.slots.has('footer') && <div class="chartFooter"><slot name="footer" /></div>}
+</figure>

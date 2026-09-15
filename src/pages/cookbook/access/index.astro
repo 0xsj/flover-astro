@@ -1,0 +1,180 @@
+---
+import { Card, CardBody, CardDescription, CardHeader, CardTitle } from '../../../components/display';
+import { Button, Checkbox, Field } from '../../../components/forms';
+import Container from '../../../components/layout/Container.astro';
+import PageHeader from '../../../components/patterns/PageHeader.astro';
+import Text from '../../../components/typography/Text.astro';
+import CookbookLayout from '../../../layouts/CookbookLayout.astro';
+import '../../../styles/cookbook.css';
+---
+
+<CookbookLayout
+	title="Access · Cookbook · flover-astro"
+	description="Explicit capability decisions that can change while work is in progress."
+>
+	<Container width="page">
+		<PageHeader
+			title="Access can change while you work"
+			description="Render explicit decisions and their reasons. Refresh stale permissions and handle a server refusal at the affected region."
+		>
+			<Button slot="actions" href="/cookbook" intent="secondary">All recipes</Button>
+		</PageHeader>
+
+		<div class="recipeStack" data-access-app data-account-id="astro-demo-account">
+			<div class="recipeGrid">
+				<Card class="recipePanel">
+					<CardHeader>
+						<span slot="actions" class="recipeBadge" data-access-badge>Checking</span>
+						<CardTitle level={2}>Protected workspace</CardTitle>
+						<CardDescription>The backend sends decisions for this account and resource. The UI does not reconstruct them from role names.</CardDescription>
+					</CardHeader>
+					<CardBody>
+						<div class="recipeResult" data-access-result role="status" aria-live="polite">
+							<div><strong>Read workspace:</strong> <span data-access-view>Checking</span><small data-access-view-reason></small></div>
+							<div><strong>Edit workspace:</strong> <span data-access-edit>Checking</span><small data-access-edit-reason></small></div>
+							<div class="recipeFormActions">
+								<Button data-access-action="view">Open protected content</Button>
+								<Button intent="primary" data-access-action="edit">Update workspace</Button>
+								<Button data-access-refresh>Refresh permissions</Button>
+							</div>
+							<p class="recipeStatus" data-access-operation>Waiting for a permission check.</p>
+							<div class="recipeNotice" data-access-content>Protected content is hidden until access is verified.</div>
+						</div>
+					</CardBody>
+				</Card>
+
+				<Card class="recipePanel">
+					<CardHeader>
+						<CardTitle level={2}>Change the authority</CardTitle>
+						<CardDescription>The next request checks the simulated server’s current policy, including when the page still has an older grant.</CardDescription>
+					</CardHeader>
+					<CardBody>
+						<div class="recipeFormActions">
+							<Button data-access-scenario="grant">Grant full access</Button>
+							<Button data-access-scenario="readonly">Make read-only</Button>
+							<Button data-access-scenario="revoke">Revoke and notify</Button>
+						</div>
+						<div class="recipeStack recipeStackTight">
+							<Button data-access-silent>Revoke without notifying this page</Button>
+							<div class="recipeNotice" data-access-silent-note hidden>The page has not heard about the change. Try an enabled action: the server will refuse it, and the page will invalidate its old permissions.</div>
+							<Button data-access-probe>Probe a server-protected read</Button>
+							<Field label="Make permission reads unavailable" controlId="access-offline">
+								<Checkbox id="access-offline" data-access-offline />
+							</Field>
+						</div>
+					</CardBody>
+				</Card>
+			</div>
+
+			<Text size="sm" tone="muted">Frontend: explain denied actions, withdraw stale grants, and hide protected content when access is invalidated. Backend: authorize every read and write. Disabling or hiding a button provides no server-side authorization. This simulation stays separate from your real session.</Text>
+		</div>
+	</Container>
+</CookbookLayout>
+
+<script>
+	import { createAccessExample } from '../../../lib/root/access';
+	import { createCapabilities } from '../../../lib/runtime/capabilities';
+	import { createLatestRead } from '../../../lib/runtime/latest-read';
+
+	const app = document.querySelector('[data-access-app]');
+	if (app instanceof HTMLElement) {
+		const accountId = app.dataset.accountId ?? 'astro-demo-account';
+		const root = createAccessExample(accountId, 180);
+		const access = createCapabilities(accountId, 'workspace', root.permissions);
+		const operation = createLatestRead(async (action, signal) => {
+			const result = await (action === 'view' ? root.read(signal) : root.update(signal));
+			if (!signal.aborted && !result.ok && result.error.kind === 'forbidden') access.invalidate();
+			return result;
+		});
+		const text = (selector, value) => {
+			const node = app.querySelector(selector);
+			if (node) node.textContent = value;
+		};
+		const tone = (selector, value) => {
+			const node = app.querySelector(selector);
+			if (!(node instanceof HTMLElement)) return;
+			if (value) node.dataset.tone = value;
+			else delete node.dataset.tone;
+		};
+		const setHidden = (selector, hidden) => {
+			const node = app.querySelector(selector);
+			if (node instanceof HTMLElement) node.hidden = hidden;
+		};
+		const renderDecision = (selector, reasonSelector, decision) => {
+			text(selector, decision.allowed ? 'Allowed' : 'Unavailable');
+			text(reasonSelector, decision.allowed ? '' : decision.reason);
+		};
+		const render = () => {
+			const state = access.get();
+			const work = operation.get();
+			const view = access.decide('view');
+			const edit = access.decide('edit');
+			const pending = work.state === 'pending';
+			const terminalMessage = work.state === 'ready'
+				? work.value
+				: work.state === 'failed'
+					? work.failure.message
+					: work.state === 'pending'
+						? 'Waiting for the server…'
+						: 'Waiting for an operation.';
+
+			text('[data-access-badge]', state.state === 'ready' ? 'Verified' : state.state[0].toUpperCase() + state.state.slice(1));
+			tone('[data-access-badge]', state.state === 'failed' ? 'warn' : state.state === 'ready' ? 'accent' : '');
+			renderDecision('[data-access-view]', '[data-access-view-reason]', view);
+			renderDecision('[data-access-edit]', '[data-access-edit-reason]', edit);
+			text('[data-access-operation]', terminalMessage);
+			text('[data-access-content]', view.allowed && work.state === 'ready' ? work.value : !view.allowed ? 'Protected content is hidden until access is verified.' : 'Open or update the workspace to read its protected content.');
+			tone('[data-access-content]', work.state === 'failed' ? 'danger' : view.allowed && work.state === 'ready' ? 'accent' : '');
+			if (state.state === 'failed') {
+				text('[data-access-operation]', `Permissions could not be verified: ${state.failure.message} Previous grants are no longer actionable.`);
+				tone('[data-access-content]', 'warn');
+			}
+			const viewButton = app.querySelector('[data-access-action="view"]');
+			const editButton = app.querySelector('[data-access-action="edit"]');
+			const refreshButton = app.querySelector('[data-access-refresh]');
+			if (viewButton instanceof HTMLButtonElement) viewButton.disabled = !view.allowed || pending;
+			if (editButton instanceof HTMLButtonElement) editButton.disabled = !edit.allowed || pending;
+			if (refreshButton instanceof HTMLButtonElement) refreshButton.disabled = state.state === 'loading';
+		};
+		const change = (canView, canEdit) => {
+			root.setAccess(canView, canEdit);
+			setHidden('[data-access-silent-note]', true);
+			operation.cancel();
+			access.invalidate();
+			void access.refresh();
+		};
+		const run = (action) => {
+			const decision = access.decide(action === 'view' ? 'view' : 'edit');
+			if (decision.allowed) void operation.run(action);
+		};
+
+		app.querySelector('[data-access-action="view"]')?.addEventListener('click', () => run('view'));
+		app.querySelector('[data-access-action="edit"]')?.addEventListener('click', () => run('edit'));
+		app.querySelector('[data-access-refresh]')?.addEventListener('click', () => void access.refresh());
+		app.querySelector('[data-access-scenario="grant"]')?.addEventListener('click', () => change(true, true));
+		app.querySelector('[data-access-scenario="readonly"]')?.addEventListener('click', () => change(true, false));
+		app.querySelector('[data-access-scenario="revoke"]')?.addEventListener('click', () => change(false, false));
+		app.querySelector('[data-access-silent]')?.addEventListener('click', () => {
+			root.setAccess(false, false);
+			setHidden('[data-access-silent-note]', false);
+		});
+		app.querySelector('[data-access-probe]')?.addEventListener('click', () => run('view'));
+		app.querySelector('[data-access-offline]')?.addEventListener('change', (event) => {
+			const input = event.currentTarget;
+			if (input instanceof HTMLInputElement) {
+				root.setOffline(input.checked);
+				void access.refresh();
+			}
+		});
+		const unsubscribeAccess = access.subscribe(render);
+		const unsubscribeOperation = operation.subscribe(render);
+		render();
+		void access.refresh();
+		window.addEventListener('pagehide', () => {
+			unsubscribeAccess();
+			unsubscribeOperation();
+			access.dispose();
+			operation.cancel();
+		}, { once: true });
+	}
+</script>

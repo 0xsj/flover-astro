@@ -1,0 +1,327 @@
+---
+import { Button } from '../../../components/forms';
+import Container from '../../../components/layout/Container.astro';
+import PageHeader from '../../../components/patterns/PageHeader.astro';
+import Text from '../../../components/typography/Text.astro';
+import { WIDGETS } from '../../../lib/cookbook/dashboard-widgets';
+import CookbookLayout from '../../../layouts/CookbookLayout.astro';
+---
+
+<CookbookLayout
+	title="Editable dashboard · Cookbook · flover-astro"
+	description="Persist and arrange a validated dashboard layout in the browser."
+>
+	<Container width="page">
+		<PageHeader
+			title="Arrange your dashboard"
+			description="The layout is a versioned browser document. Customize it with the pointer on desktop or the arrange menus from any keyboard."
+		>
+			<Button slot="actions" href="/cookbook/dashboard" intent="secondary">Account dashboard</Button>
+		</PageHeader>
+
+		<div class="recipeStack" data-editable-dashboard data-account-id="astro-demo-account">
+			<div class="editableDashboardControls">
+				<div class="editableDashboardControlsMain">
+					<div class="recipeField">
+						<label for="dashboard-add-widget">Add a widget</label>
+						<select id="dashboard-add-widget" class="recipeSelect" data-editor-add>
+							<option value="">Choose a widget…</option>
+							{WIDGETS.map((widget) => <option value={widget.id}>{widget.title}</option>)}
+						</select>
+					</div>
+					<Button size="sm" intent="secondary" data-editor-add-button disabled>Add widget</Button>
+				</div>
+				<div class="editableDashboardControlsActions">
+					<Button size="sm" intent="primary" data-editor-customize>Customize</Button>
+					<Button size="sm" data-editor-save disabled>Save layout</Button>
+					<Button size="sm" data-editor-discard disabled>Discard edits</Button>
+					<Button size="sm" intent="danger" data-editor-reset>Reset saved layout</Button>
+				</div>
+			</div>
+
+			<div class="recipeStackTight" data-editor-alerts aria-live="polite"></div>
+			<Text size="sm" class="editableDashboardStatus" data-editor-status role="status" aria-live="polite">Loading the saved arrangement…</Text>
+			<div class="astroDashboardGrid" data-editor-grid aria-label="Dashboard widgets">
+				<div class="astroDashboardEmpty">Loading the dashboard grid…</div>
+			</div>
+			<p class="astroDashboardHint" data-desktop-only>Desktop gestures: drag a card by its title, or use the corner handle to resize. A gesture is only saved after you choose Save layout.</p>
+			<p class="astroDashboardHint">The document key is scoped to <code>flover.cookbook.dashboard.astro-demo-account</code>. Open this page in another tab to see external-change detection.</p>
+			<div class="astroDashboardAnnouncement" data-editor-announcement aria-live="polite"></div>
+		</div>
+	</Container>
+</CookbookLayout>
+
+<script>
+	import { createDocumentStore } from '../../../lib/runtime/document-store';
+	import { createBrowserStorage, createDocument } from '../../../lib/storage';
+	import { DEFAULT_LAYOUT, WIDGETS, WIDGET_BY_ID } from '../../../lib/cookbook/dashboard-widgets';
+	import { decodeDashboardLayout, editDashboardLayout, GRID } from '../../../lib/workspaces/dashboard-grid';
+
+	const app = document.querySelector('[data-editable-dashboard]');
+	if (app instanceof HTMLElement) {
+		const accountId = app.dataset.accountId ?? 'astro-demo-account';
+		const schema = { key: 'layout', version: 1, decode: decodeDashboardLayout };
+		const storedDocument = createDocument(
+			createBrowserStorage('local'),
+			`flover.cookbook.dashboard.${accountId}`,
+			schema
+		);
+		const store = createDocumentStore(storedDocument);
+		let snapshot = store.get();
+		let editing = false;
+		let draft = null;
+		let gesture = null;
+		let notice = '';
+		let noticeTone = '';
+		let writeFailure = '';
+		let announcement = '';
+		let unsubscribe = () => {};
+
+		const $ = (selector) => app.querySelector(selector);
+		const json = (value) => JSON.stringify(value);
+		const storedStamp = () => {
+			if (snapshot.state !== 'ready') return 'loading';
+			if (!snapshot.result.ok) return `error:${snapshot.result.error.type ?? snapshot.result.error.kind}`;
+			return snapshot.result.value.state === 'found' ? json(snapshot.result.value.value) : 'missing';
+		};
+		const savedLayout = () => {
+			if (snapshot.state !== 'ready' || !snapshot.result.ok || snapshot.result.value.state === 'missing') return DEFAULT_LAYOUT;
+			return snapshot.result.value.value;
+		};
+		const activeLayout = () => gesture?.preview ?? draft?.layout ?? savedLayout();
+		const isDirty = () => Boolean(draft && json(draft.layout) !== draft.baseStamp);
+		const externalChange = () => Boolean(draft && storedStamp() !== draft.baseStamp);
+		const announce = (value) => { announcement = value; const node = $('[data-editor-announcement]'); if (node) node.textContent = value; };
+		const setButton = (selector, disabled, label) => {
+			const node = $(selector);
+			if (!(node instanceof HTMLButtonElement)) return;
+			node.disabled = disabled;
+			if (label) node.textContent = label;
+		};
+		const setNotice = (value, tone = '') => { notice = value; noticeTone = tone; };
+
+		const commitPreview = (next, message = 'Draft updated.') => {
+			if (!draft) draft = { layout: [...activeLayout()], baseStamp: storedStamp() };
+			draft.layout = [...next];
+			setNotice(message, '');
+			writeFailure = '';
+			announce(message);
+			render();
+		};
+
+		const widgetContent = (widget) => {
+			const body = document.createElement('div');
+			body.className = 'astroDashboardCardBody';
+			if (widget.kind === 'stat') {
+				body.innerHTML = `<div class="astroDashboardStat"><span class="astroDashboardStatLabel"></span><strong class="astroDashboardStatValue"></strong><span class="astroDashboardStatHint"></span></div>`;
+				body.querySelector('.astroDashboardStatLabel').textContent = widget.label;
+				body.querySelector('.astroDashboardStatValue').textContent = widget.value;
+				body.querySelector('.astroDashboardStatHint').textContent = widget.hint;
+				return body;
+			}
+			if (widget.kind === 'line') {
+				const values = widget.values;
+				const min = Math.min(...values);
+				const max = Math.max(...values);
+				const points = values.map((value, index) => `${(index / (values.length - 1)) * 100},${92 - ((value - min) / Math.max(1, max - min)) * 72}`).join(' ');
+				body.innerHTML = `<div class="astroDashboardLine"><span class="astroDashboardChartLabel"></span><svg viewBox="0 0 100 100" role="img"><line class="gridLine" x1="0" y1="20" x2="100" y2="20"></line><line class="gridLine" x1="0" y1="56" x2="100" y2="56"></line><line class="gridLine" x1="0" y1="92" x2="100" y2="92"></line><polyline points="${points}"></polyline></svg><span class="astroDashboardAxis"></span></div>`;
+				body.querySelector('.astroDashboardChartLabel').textContent = widget.label;
+				body.querySelector('.astroDashboardAxis').replaceChildren(...widget.labels.map((label) => { const span = document.createElement('span'); span.textContent = label; return span; }));
+				return body;
+			}
+			if (widget.kind === 'bars') {
+				const max = Math.max(...widget.values.map((entry) => entry.value));
+				body.innerHTML = `<div class="astroDashboardBars"><span class="astroDashboardChartLabel"></span><div data-bars></div></div>`;
+				body.querySelector('.astroDashboardChartLabel').textContent = widget.label;
+				const bars = body.querySelector('[data-bars]');
+				for (const entry of widget.values) {
+					const row = document.createElement('div'); row.className = 'astroDashboardBarRow';
+					row.innerHTML = `<div class="astroDashboardBarMeta"><span></span><strong></strong></div><div class="astroDashboardBarTrack"><div class="astroDashboardBarFill"></div></div>`;
+					row.querySelector('span').textContent = entry.label;
+					row.querySelector('strong').textContent = String(entry.value);
+					row.querySelector('.astroDashboardBarFill').style.inlineSize = `${(entry.value / max) * 100}%`;
+					bars.append(row);
+				}
+				return body;
+			}
+			body.innerHTML = `<div class="astroDashboardNote"><span class="astroDashboardChartLabel"></span><p></p></div>`;
+			body.querySelector('.astroDashboardChartLabel').textContent = widget.label;
+			body.querySelector('p').textContent = widget.body;
+			return body;
+		};
+
+		const renderCard = (item) => {
+			const widget = WIDGET_BY_ID.get(item.id);
+			const wrapper = document.createElement('div');
+			wrapper.className = 'astroDashboardItem';
+			wrapper.dataset.widgetId = item.id;
+			wrapper.style.gridColumn = `${item.x + 1} / span ${item.width}`;
+			wrapper.style.gridRow = `${item.y + 1} / span ${item.height}`;
+			const card = document.createElement('article');
+			card.className = 'displayCard astroDashboardCard';
+			const header = document.createElement('header');
+			header.className = 'astroDashboardCardHeader';
+			const title = document.createElement('strong');
+			title.className = 'astroDashboardCardTitle astroDashboardDrag';
+			title.dataset.dragId = item.id;
+			title.textContent = widget?.title ?? 'Unavailable widget';
+			header.append(title);
+			const actions = document.createElement('div');
+			actions.className = 'astroDashboardCardActions';
+			if (editing) {
+				const select = document.createElement('select');
+				select.className = 'astroDashboardArrange';
+				select.dataset.layoutEdit = item.id;
+				select.setAttribute('aria-label', `Arrange ${widget?.title ?? item.id}`);
+				select.innerHTML = '<option value="">Arrange…</option><option value="left">Move left</option><option value="right">Move right</option><option value="up">Move up</option><option value="down">Move down</option><option value="wider">Make wider</option><option value="narrower">Make narrower</option><option value="taller">Make taller</option><option value="shorter">Make shorter</option>';
+				actions.append(select);
+				const remove = document.createElement('button');
+				remove.className = 'button buttonGhost buttonSm'; remove.type = 'button'; remove.dataset.removeWidget = item.id; remove.textContent = 'Remove';
+				actions.append(remove);
+			}
+			header.append(actions);
+			card.append(header, widget ? widgetContent(widget) : Object.assign(document.createElement('div'), { className: 'astroDashboardCardBody', textContent: 'This widget is not available in the current catalog.' }));
+			if (editing) {
+				const resize = document.createElement('button');
+				resize.className = 'astroDashboardResize'; resize.type = 'button'; resize.dataset.resizeId = item.id; resize.setAttribute('aria-label', `Resize ${widget?.title ?? item.id}`);
+				card.append(resize);
+			}
+			wrapper.append(card);
+			return wrapper;
+		};
+
+		function render() {
+			snapshot = store.get();
+			const alerts = $('[data-editor-alerts]');
+			const grid = $('[data-editor-grid]');
+			if (!(alerts instanceof HTMLElement) || !(grid instanceof HTMLElement)) return;
+			alerts.replaceChildren();
+			if (snapshot.state === 'loading') {
+				grid.replaceChildren(Object.assign(document.createElement('div'), { className: 'astroDashboardEmpty', textContent: 'Loading the dashboard grid…' }));
+				const status = $('[data-editor-status]'); if (status) status.textContent = 'Loading the saved arrangement…';
+				return;
+			}
+			if (!snapshot.result.ok) {
+				const alert = document.createElement('div'); alert.className = 'recipeNotice'; alert.dataset.tone = 'danger'; alert.setAttribute('role', 'alert'); alert.textContent = `Saved layout unavailable: ${snapshot.result.error.message} Reset it to continue.`; alerts.append(alert);
+			}
+			if (snapshot.watchFailure) {
+				const alert = document.createElement('div'); alert.className = 'recipeNotice'; alert.dataset.tone = 'warn'; alert.setAttribute('role', 'alert'); alert.textContent = `Cross-tab watch unavailable: ${snapshot.watchFailure.message}`; alerts.append(alert);
+			}
+			if (externalChange()) {
+				const alert = document.createElement('div'); alert.className = 'recipeNotice'; alert.dataset.tone = 'warn'; alert.setAttribute('role', 'alert'); alert.textContent = 'This layout changed in another tab. Discard your draft or save it to replace that version.'; alerts.append(alert);
+			}
+			if (writeFailure) {
+				const alert = document.createElement('div'); alert.className = 'recipeNotice'; alert.dataset.tone = 'danger'; alert.setAttribute('role', 'alert'); alert.textContent = `Could not save layout: ${writeFailure}`; alerts.append(alert);
+			}
+			if (notice) {
+				const message = document.createElement('div'); message.className = 'recipeNotice'; if (noticeTone) message.dataset.tone = noticeTone; message.setAttribute('role', 'status'); message.textContent = notice; alerts.append(message);
+			}
+
+			const layout = activeLayout();
+			grid.replaceChildren(...(layout.length ? layout.map(renderCard) : [Object.assign(document.createElement('div'), { className: 'astroDashboardEmpty', textContent: editing ? 'No widgets are on this dashboard. Add one above.' : 'No widgets are saved on this dashboard.' })]));
+			const selected = $('[data-editor-add]');
+			const present = new Set(layout.map((item) => item.id));
+			if (selected instanceof HTMLSelectElement) {
+				for (const option of selected.options) option.disabled = option.value !== '' && present.has(option.value);
+				if (present.has(selected.value)) selected.value = '';
+			}
+			setButton('[data-editor-add-button]', !editing || !selected?.value || present.has(selected?.value) || layout.length >= GRID.maxItems);
+			setButton('[data-editor-save]', !draft || !isDirty() || externalChange());
+			setButton('[data-editor-discard]', !draft);
+			const customize = $('[data-editor-customize]');
+			if (customize instanceof HTMLButtonElement) customize.textContent = editing ? 'Done' : 'Customize';
+			const status = $('[data-editor-status]');
+			if (status) status.textContent = editing ? (draft && isDirty() ? 'Editing a local draft. Save when the arrangement is ready.' : 'Customize mode is on. Changes are local until saved.') : 'Read-only preview. Customize to edit this account’s layout.';
+		}
+
+		const addWidget = () => {
+			const select = $('[data-editor-add]');
+			if (!(select instanceof HTMLSelectElement) || !select.value || !editing) return;
+			const layout = activeLayout();
+			const y = layout.reduce((max, item) => Math.max(max, item.y + item.height), 0);
+			const item = { id: select.value, x: 0, y, width: 6, height: 4 };
+			const checked = decodeDashboardLayout([...layout, item]);
+			if (!checked.ok) { setNotice('There is no open space for that widget at the end of the grid.', 'warn'); render(); return; }
+			commitPreview(checked.value, 'Widget added to the draft.');
+		};
+
+		const removeWidget = (id) => commitPreview(activeLayout().filter((item) => item.id !== id), 'Widget removed from the draft.');
+		const applyEdit = (id, value) => {
+			if (!value) return;
+			const next = editDashboardLayout(activeLayout(), id, value);
+			if (json(next) === json(activeLayout())) { setNotice('That move would leave the grid or overlap another widget.', 'warn'); render(); return; }
+			commitPreview(next, 'Widget arrangement updated.');
+		};
+
+		const startGesture = (id, mode, event) => {
+			if (!editing || window.matchMedia('(max-width: 640px)').matches || !(event instanceof PointerEvent)) return;
+			const item = activeLayout().find((entry) => entry.id === id);
+			if (!item || event.button !== 0) return;
+			gesture = { id, mode, startX: event.clientX, startY: event.clientY, base: [...activeLayout()], preview: [...activeLayout()] };
+			event.preventDefault();
+		};
+		window.addEventListener('pointermove', (event) => {
+			if (!gesture) return;
+			const grid = $('[data-editor-grid]');
+			if (!(grid instanceof HTMLElement)) return;
+			const item = gesture.base.find((entry) => entry.id === gesture.id);
+			if (!item) return;
+			const column = (grid.clientWidth + 16) / GRID.columns;
+			const dx = Math.round((event.clientX - gesture.startX) / column);
+			const dy = Math.round((event.clientY - gesture.startY) / 56);
+			const next = { ...item };
+			if (gesture.mode === 'move') { next.x += dx; next.y += dy; } else { next.width += dx; next.height += dy; }
+			const candidate = decodeDashboardLayout(gesture.base.map((entry) => entry.id === item.id ? next : entry));
+			if (candidate.ok && json(candidate.value) !== json(gesture.preview)) { gesture.preview = candidate.value; render(); }
+		});
+		const finishGesture = (cancel = false) => {
+			if (!gesture) return;
+			const current = gesture;
+			gesture = null;
+			if (!cancel && json(current.preview) !== json(current.base)) commitPreview(current.preview, 'Gesture preview committed to the draft.');
+			else render();
+		};
+		window.addEventListener('pointerup', () => finishGesture());
+		window.addEventListener('pointercancel', () => finishGesture(true));
+		window.addEventListener('keydown', (event) => { if (event.key === 'Escape') finishGesture(true); });
+
+		app.addEventListener('click', (event) => {
+			const target = event.target;
+			if (!(target instanceof Element)) return;
+			const remove = target.closest('[data-remove-widget]');
+			if (remove) { removeWidget(remove.getAttribute('data-remove-widget')); return; }
+			if (target.closest('[data-editor-add-button]')) { addWidget(); return; }
+			if (target.closest('[data-editor-customize]')) { editing = !editing; setNotice(editing ? 'Customize mode enabled.' : 'Read-only preview restored.', ''); render(); return; }
+			if (target.closest('[data-editor-discard]')) { draft = null; writeFailure = ''; setNotice('Local changes discarded.', ''); announce('Local changes discarded.'); render(); return; }
+			if (target.closest('[data-editor-save]')) {
+				if (!draft || !isDirty() || externalChange()) return;
+				const result = storedDocument.write(draft.layout);
+				if (!result.ok) { writeFailure = result.error.message; render(); return; }
+				draft = null; writeFailure = ''; setNotice('Dashboard layout saved to this browser.', ''); announce('Dashboard layout saved.'); render(); return;
+			}
+			if (target.closest('[data-editor-reset]')) {
+				const result = storedDocument.remove();
+				if (!result.ok) { writeFailure = result.error.message; render(); return; }
+				draft = null; writeFailure = ''; setNotice('Saved layout removed. Showing the default arrangement.', ''); announce('Saved layout reset.'); render();
+			}
+		});
+		app.addEventListener('change', (event) => {
+			const target = event.target;
+			if (!(target instanceof HTMLSelectElement)) return;
+			if (target.matches('[data-layout-edit]')) { applyEdit(target.dataset.layoutEdit, target.value); target.value = ''; }
+		});
+		app.addEventListener('pointerdown', (event) => {
+			const target = event.target;
+			if (!(target instanceof Element)) return;
+			const drag = target.closest('[data-drag-id]');
+			if (drag) { startGesture(drag.getAttribute('data-drag-id'), 'move', event); return; }
+			const resize = target.closest('[data-resize-id]');
+			if (resize) startGesture(resize.getAttribute('data-resize-id'), 'resize', event);
+		});
+
+		const stopStore = store.subscribe(() => { snapshot = store.get(); render(); });
+		unsubscribe = store.connect();
+		render();
+		window.addEventListener('pagehide', () => { stopStore(); unsubscribe(); }, { once: true });
+	}
+</script>

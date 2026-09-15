@@ -1,0 +1,69 @@
+---
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../../../components/disclosure';
+import { Button } from '../../../components/forms';
+import Container from '../../../components/layout/Container.astro';
+import Flex from '../../../components/layout/Flex.astro';
+import Heading from '../../../components/typography/Heading.astro';
+import Text from '../../../components/typography/Text.astro';
+import CookbookLayout from '../../../layouts/CookbookLayout.astro';
+import ChapterNavigation from './_components/ChapterNavigation.astro';
+import ManualBlock from './_components/ManualBlock.astro';
+import { chapters, findChapter, manualHref } from './_lib/chapters';
+import '../../../styles/manual.css';
+
+const chapter = findChapter(Astro.params.chapter ?? '');
+if (!chapter) Astro.response.status = 404;
+const activeChapter = chapter ?? chapters[0];
+const index = chapters.indexOf(activeChapter);
+const previous = chapters[index - 1];
+const next = chapters[index + 1];
+---
+
+<CookbookLayout
+	title={`${activeChapter.title} · Flover manual`}
+	description={activeChapter.description}
+>
+	<Container width="page">
+		<div class="manualReader">
+			<aside class="manualSidebar">
+				<div class="manualDesktopChapters"><ChapterNavigation current={activeChapter.slug} /></div>
+				<div class="manualMobileChapters">
+					<Accordion type="single" collapsible>
+						<AccordionItem value="chapters">
+							<AccordionTrigger>Chapters · {index + 1} of {chapters.length}</AccordionTrigger>
+							<AccordionContent><ChapterNavigation current={activeChapter.slug} /></AccordionContent>
+						</AccordionItem>
+					</Accordion>
+				</div>
+			</aside>
+
+			<article class="manualArticle">
+				<div class="manualChapterHeader">
+					<Text size="sm" tone="muted">CHAPTER {String(index + 1).padStart(2, '0')} / {String(chapters.length).padStart(2, '0')}</Text>
+					<header class="pageHeader">
+						<div class="pageHeaderCopy"><Heading level={1} size="lg">{activeChapter.title}</Heading><Text size="lg" tone="muted" class="pageHeaderDescription">{activeChapter.description}</Text></div>
+					</header>
+				</div>
+
+				<nav aria-label="On this page" class="manualContents">
+					<Text size="sm" weight="medium">On this page</Text>
+					<ul>{activeChapter.sections.map((section) => <li><a href={`#${section.id}`}>{section.title}</a></li>)}</ul>
+				</nav>
+
+				{activeChapter.sections.map((section) => (
+					<section id={section.id} aria-labelledby={`${section.id}-title`} class="manualSection">
+						<Heading level={2} size="md" id={`${section.id}-title`}>{section.title}</Heading>
+						{section.blocks.map((block) => <ManualBlock block={block} />)}
+					</section>
+				))}
+
+				<nav aria-label="Continue reading" class="manualContinue">
+					<Flex wrap gap={4}>
+						<Button href={previous ? manualHref(previous.slug) : '/cookbook/manual'}>{previous ? `Previous: ${previous.title}` : 'Back to overview'}</Button>
+						{next ? <Button href={manualHref(next.slug)} intent="primary">Next: {next.title}</Button> : <Button href="/cookbook" intent="primary">Explore the cookbook</Button>}
+					</Flex>
+				</nav>
+			</article>
+		</div>
+	</Container>
+</CookbookLayout>

@@ -1,0 +1,75 @@
+---
+import '../../styles/charts.css';
+import ChartData from './ChartData.astro';
+import type { ChartSeries } from './types';
+
+export type LineDatum = { label: string; values: Readonly<Record<string, number | null>> };
+
+interface Props {
+	label: string;
+	data: readonly LineDatum[];
+	series: readonly ChartSeries[];
+	formatValue?: (value: number) => string;
+}
+
+const { label, data, series, formatValue = String } = Astro.props;
+const valid = (value: number | null | undefined): value is number => typeof value === 'number' && Number.isFinite(value);
+let low = 0;
+let high = 0;
+let measured = false;
+for (const item of data) {
+	for (const entry of series) {
+		const value = item.values[entry.key];
+		if (valid(value)) { measured = true; low = Math.min(low, value); high = Math.max(high, value); }
+	}
+}
+if (low === high) high = 1;
+const scale = Math.max(Math.abs(low), Math.abs(high));
+const x = (index: number) => data.length === 1 ? 322 : 64 + (index / (data.length - 1)) * 516;
+const y = (value: number) => 18 + ((high / scale - value / scale) / (high / scale - low / scale)) * 172;
+const ticks = [high, high / 2 + low / 2, low];
+const labelEvery = Math.max(1, Math.ceil(data.length / 6));
+const tickFormat = (value: number) => value.toLocaleString('en-US', {
+	maximumSignificantDigits: 3,
+	notation: Math.abs(value) >= 1000000 || (value !== 0 && Math.abs(value) < 0.01) ? 'scientific' : 'standard'
+});
+const seriesPath = (key: string) => {
+	let connected = false;
+	return data.map((item, index) => {
+		const value = item.values[key];
+		if (!valid(value)) { connected = false; return ''; }
+		const command = connected ? 'L' : 'M';
+		connected = true;
+		return `${command}${x(index)},${y(value)}`;
+	}).join(' ');
+};
+const seriesClass = (item: ChartSeries) => [
+	'chartSeries',
+	`chartSeries${item.tone ? item.tone[0].toUpperCase() + item.tone.slice(1) : 'Accent'}`,
+	`chartSeries${item.line ? item.line[0].toUpperCase() + item.line.slice(1) : 'Solid'}`
+];
+---
+
+{!data.length || !series.length ? (
+	<p class="chartEmpty">No measurements to display.</p>
+) : (
+	<div class="chartLine">
+		{measured ? (
+			<div class="chartViewport" role="region" tabindex="0" aria-label={`${label} plot — scroll horizontally on small screens`}>
+				<svg viewBox="0 0 608 230" class="chartSvg" role="img" aria-label={`${label}. Exact values in the data table below.`}>
+					{ticks.map((tick) => <g class="chartAxis"><line x1="64" y1={y(tick)} x2="580" y2={y(tick)} class="chartGridLine"></line><text x="54" y={y(tick)} dy="0.35em" text-anchor="end">{formatValue === String ? tickFormat(tick) : formatValue(tick)}</text></g>)}
+					{low < 0 && high > 0 && <line x1="64" y1={y(0)} x2="580" y2={y(0)} class="chartZeroLine"></line>}
+					{data.map((item, index) => (index % labelEvery === 0 || index === data.length - 1) && <text x={x(index)} y="216" text-anchor={index === 0 ? 'start' : index === data.length - 1 ? 'end' : 'middle'} class="chartAxis">{item.label}</text>)}
+					{series.map((entry) => <g class:list={seriesClass(entry)}><path d={seriesPath(entry.key)} class="chartStroke" fill="none"></path>{data.map((item, index) => { const value = item.values[entry.key]; return valid(value) && <circle cx={x(index)} cy={y(value)} r="3" fill="currentColor"><title>{`${entry.label}, ${item.label}: ${formatValue(value)}`}</title></circle>; })}</g>)}
+				</svg>
+			</div>
+		) : <p class="chartEmpty">Measurements unavailable.</p>}
+		<ChartData title={label}>
+			<table class="displayTable">
+				<caption class="displayTableCaption">{label}</caption>
+				<thead class="displayTableHead"><tr class="displayTableRow"><th class="displayTableTh">Period</th>{series.map((entry) => <th class="displayTableTh displayTableNumeric">{entry.label}</th>)}</tr></thead>
+				<tbody>{data.map((item) => <tr class="displayTableRow"><th scope="row" class="displayTableTh">{item.label}</th>{series.map((entry) => { const value = item.values[entry.key]; return <td class="displayTableTd displayTableNumeric">{valid(value) ? formatValue(value) : 'Unavailable'}</td>; })}</tr>)}</tbody>
+			</table>
+		</ChartData>
+	</div>
+)}

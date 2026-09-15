@@ -1,0 +1,111 @@
+---
+import { Card, CardBody, CardDescription, CardHeader, CardTitle, Stat } from '../../../components/display';
+import { Button } from '../../../components/forms';
+import Container from '../../../components/layout/Container.astro';
+import PageHeader from '../../../components/patterns/PageHeader.astro';
+import Text from '../../../components/typography/Text.astro';
+import CookbookLayout from '../../../layouts/CookbookLayout.astro';
+import '../../../styles/cookbook.css';
+
+const languages = [
+	{ value: 'en-US', label: 'English', dir: 'ltr', title: 'Workspace overview', description: 'Review the activity and presentation settings for your workspace.', count: 'Processed records', amount: 'Example amount', updated: 'Last updated', missing: 'Not available', action: 'Review workspace presentation settings', dialog: 'Presentation settings', body: 'Dates, numbers and currency use the selected context. Changing language does not convert the amount or change the underlying instant.', close: 'Close', reference: 'Reference' },
+	{ value: 'de-DE', label: 'Deutsch · long text', dir: 'ltr', title: 'Arbeitsbereichsübersicht und Verarbeitungseinstellungen', description: 'Überprüfen Sie die aktuellen Verarbeitungsinformationen und die sprachabhängigen Darstellungseinstellungen Ihres Arbeitsbereichs.', count: 'Erfolgreich verarbeitete Datensätze', amount: 'Beispielbetrag', updated: 'Zeitpunkt der letzten Aktualisierung', missing: 'Nicht verfügbar', action: 'Darstellungseinstellungen für den gesamten Arbeitsbereich überprüfen', dialog: 'Arbeitsbereichsdarstellungseinstellungen', body: 'Datum, Zahlen und Währungsbeträge verwenden die ausgewählten Einstellungen. Eine andere Sprache verändert weder den Betrag noch den zugrunde liegenden Zeitpunkt.', close: 'Schließen', reference: 'Referenznummer' },
+	{ value: 'ar-EG', label: 'العربية · RTL', dir: 'rtl', title: 'نظرة عامة على مساحة العمل', description: 'راجع النشاط وإعدادات العرض الخاصة بمساحة العمل، مع الحفاظ على وضوح الأرقام والتواريخ والنصوص الطويلة.', count: 'السجلات التي تمت معالجتها', amount: 'مبلغ توضيحي', updated: 'آخر تحديث', missing: 'غير متاح', action: 'مراجعة إعدادات العرض الخاصة بمساحة العمل', dialog: 'إعدادات العرض', body: 'تستخدم التواريخ والأرقام والعملات الإعدادات المحددة. تغيير اللغة لا يحوّل المبلغ ولا يغيّر اللحظة الزمنية الأصلية.', close: 'إغلاق', reference: 'المرجع' }
+];
+---
+
+<CookbookLayout
+	title="Localization · Cookbook · flover-astro"
+	description="Explicit language, direction, time-zone, and currency formatting context."
+>
+	<Container width="page">
+		<PageHeader
+			title="Make room for another language"
+			description="Keep locale, time zone and currency explicit. Test translated content, missing values, and right-to-left composition before a product depends on them."
+		>
+			<Button slot="actions" href="/cookbook" intent="secondary">All recipes</Button>
+		</PageHeader>
+
+		<div class="recipeStack" data-localization-app>
+			<div class="recipeToolbar">
+				<div class="recipeField"><label for="locale-language">Language and direction</label><select id="locale-language" class="recipeSelect" data-locale-language>{languages.map((language) => <option value={language.value}>{language.label}</option>)}</select></div>
+				<div class="recipeField"><label for="locale-time-zone">Time zone</label><select id="locale-time-zone" class="recipeSelect" data-locale-time-zone><option value="UTC">UTC</option><option value="America/New_York">New York</option><option value="Europe/Istanbul">Istanbul</option><option value="Asia/Tokyo">Tokyo</option></select></div>
+				<div class="recipeField"><label for="locale-currency">Currency presentation</label><select id="locale-currency" class="recipeSelect" data-locale-currency><option value="USD">USD</option><option value="EUR">EUR</option><option value="JPY">JPY</option></select></div>
+			</div>
+			<label class="recipeChoice" for="locale-invalid"><input id="locale-invalid" type="checkbox" data-locale-invalid /> Simulate invalid source values</label>
+			<div class="recipeNotice" data-locale-notice data-tone="warn" hidden>The formatter rejected the invalid number and instant. This region explicitly presents missing information.</div>
+			<section class="recipeLocalized" aria-label="Localized workspace preview" lang="en-US" dir="ltr" data-locale-preview>
+				<Card>
+					<CardHeader><CardTitle level={2} data-locale-title>Workspace overview</CardTitle><CardDescription data-locale-description>Review the activity and presentation settings for your workspace.</CardDescription></CardHeader>
+					<CardBody>
+							<div class="recipeStack recipeStackTight">
+							<div class="recipeStats"><Stat label="Processed records" value="1,234,568" /><Stat label="Example amount" value="$1,299.50" /></div>
+							<div><Text size="sm" tone="muted" data-locale-updated>Last updated</Text><Text data-locale-instant>Sep 10, 2026, 12:30 AM</Text></div>
+							<Text size="sm"><span data-locale-reference>Reference</span>: <bdi dir="ltr" class="recipeIdentifier">INV-2026-0042 / api.example.com</bdi></Text>
+							<div><Button data-locale-open>Review workspace presentation settings</Button></div>
+						</div>
+					</CardBody>
+				</Card>
+			</section>
+			<dialog class="recipeDialog" data-locale-dialog><div class="recipeStack recipeStackTight"><h2 data-locale-dialog-title>Presentation settings</h2><p data-locale-dialog-body>Dates, numbers and currency use the selected context.</p><p><bdi dir="ltr" data-locale-context>UTC · USD</bdi></p><Button data-locale-close>Close</Button></div></dialog>
+			<Text size="sm" tone="muted">Frontend: use an explicit formatting context and language catalog, allow text to wrap, and pass direction to portal content. Backend: send unambiguous instants and agreed amount units; supply translated content where appropriate. Currency selection changes presentation only, with no exchange-rate conversion. This is a formatting and layout foundation, not an application-wide translation rollout.</Text>
+		</div>
+	</Container>
+</CookbookLayout>
+
+<script define:vars={{ languages }}>
+	const app = document.querySelector('[data-localization-app]');
+	if (app instanceof HTMLElement) {
+		const languageSelect = app.querySelector('[data-locale-language]');
+		const timeZoneSelect = app.querySelector('[data-locale-time-zone]');
+		const currencySelect = app.querySelector('[data-locale-currency]');
+		const invalidInput = app.querySelector('[data-locale-invalid]');
+		const copy = () => languages.find((language) => language.value === (languageSelect instanceof HTMLSelectElement ? languageSelect.value : 'en-US')) ?? languages[0];
+		const text = (selector, value) => { const node = app.querySelector(selector); if (node) node.textContent = value; };
+		const format = (locale, timeZone, currency, invalid) => {
+			if (invalid) return { number: copy().missing, money: copy().missing, instant: copy().missing };
+			try {
+				return {
+					number: new Intl.NumberFormat(locale).format(1234567.89),
+					money: new Intl.NumberFormat(locale, { style: 'currency', currency }).format(1299.5),
+					instant: new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short', timeZone }).format(Date.UTC(2026, 8, 10, 0, 30))
+				};
+			} catch {
+				return { number: copy().missing, money: copy().missing, instant: copy().missing };
+			}
+		};
+		const render = () => {
+			const selected = copy();
+			const timeZone = timeZoneSelect instanceof HTMLSelectElement ? timeZoneSelect.value : 'UTC';
+			const currency = currencySelect instanceof HTMLSelectElement ? currencySelect.value : 'USD';
+			const invalid = invalidInput instanceof HTMLInputElement && invalidInput.checked;
+			const values = format(selected.value, timeZone, currency, invalid);
+			const preview = app.querySelector('[data-locale-preview]');
+			if (preview instanceof HTMLElement) { preview.lang = selected.value; preview.dir = selected.dir; }
+			text('[data-locale-title]', selected.title);
+			text('[data-locale-description]', selected.description);
+			const statLabels = app.querySelectorAll('.displayStatLabel');
+			if (statLabels[0]) statLabels[0].textContent = selected.count;
+			if (statLabels[1]) statLabels[1].textContent = selected.amount;
+			text('[data-locale-updated]', selected.updated);
+			text('[data-locale-instant]', values.instant);
+			text('[data-locale-reference]', selected.reference);
+			text('[data-locale-dialog-title]', selected.dialog);
+			text('[data-locale-dialog-body]', selected.body);
+			text('[data-locale-context]', `${timeZone} · ${currency}`);
+			text('[data-locale-open]', selected.action);
+			text('[data-locale-close]', selected.close);
+			const stats = app.querySelectorAll('.displayStatValue');
+			if (stats[0]) stats[0].textContent = values.number;
+			if (stats[1]) stats[1].textContent = values.money;
+			const dialog = app.querySelector('[data-locale-dialog]');
+			if (dialog instanceof HTMLDialogElement) { dialog.lang = selected.value; dialog.dir = selected.dir; }
+			const notice = app.querySelector('[data-locale-notice]');
+			if (notice instanceof HTMLElement) notice.hidden = !invalid;
+		};
+		[languageSelect, timeZoneSelect, currencySelect, invalidInput].forEach((control) => control?.addEventListener('change', render));
+		app.querySelector('[data-locale-open]')?.addEventListener('click', () => { const dialog = app.querySelector('[data-locale-dialog]'); if (dialog instanceof HTMLDialogElement) dialog.showModal(); });
+		app.querySelector('[data-locale-close]')?.addEventListener('click', () => { const dialog = app.querySelector('[data-locale-dialog]'); if (dialog instanceof HTMLDialogElement) dialog.close(); });
+		render();
+	}
+</script>

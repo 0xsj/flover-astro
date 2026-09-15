@@ -1,0 +1,202 @@
+---
+import { Badge, Card, CardBody, CardDescription, CardHeader, CardTitle, Empty, Panel } from '../../../components/display';
+import { Alert } from '../../../components/feedback';
+import { Button } from '../../../components/forms';
+import Container from '../../../components/layout/Container.astro';
+import Flex from '../../../components/layout/Flex.astro';
+import PageHeader from '../../../components/patterns/PageHeader.astro';
+import Text from '../../../components/typography/Text.astro';
+import { presenceOf } from '../../../lib/kernel';
+import { parsePlan } from '../../../lib/chaos';
+import { createDashboardExample } from '../../../lib/root/dashboard';
+import CookbookLayout from '../../../layouts/CookbookLayout.astro';
+
+const root = createDashboardExample({ chaos: parsePlan(Astro.url.searchParams), latencyMs: 0 });
+const sessionsResult = await root.readSessions();
+const otherSessions = presenceOf(sessionsResult.map((sessions) => sessions.filter((session) => !session.current)));
+const formatDate = (value: string) => new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+const user = root.user;
+---
+
+<CookbookLayout
+	title="Dashboard · Cookbook · flover-astro"
+	description="Read a server-rendered account dashboard and reconcile browser-side session actions."
+>
+	<Container width="page">
+		<PageHeader
+			title={`Welcome back, ${user.name}`}
+			description="The dashboard keeps the server read, account identity, and browser-side session actions distinct."
+		>
+			<Button slot="actions" href="/cookbook" intent="secondary">All recipes</Button>
+		</PageHeader>
+
+		<div class="recipeStack">
+			{root.underChaos && <Alert tone="warn" title="Chaos is active" live="polite">This render is using the query-string failure plan. <a href="/cookbook/dashboard">Clear the plan</a>.</Alert>}
+			{root.usingFixtures('session') && <Alert tone="info" title="Isolated demo root" live="polite">The auth UI is a later port, so this page uses a service-backed Astro demo account. It does not read or change a real session cookie.</Alert>}
+
+			<div class="dashboardSummaryGrid">
+				<Panel title="Account">
+					<div class="dashboardSummaryGrid">
+						<div class="dashboardSummary"><span class="dashboardSummaryLabel">Name</span><strong class="dashboardSummaryValue">{user.name}</strong></div>
+						<div class="dashboardSummary"><span class="dashboardSummaryLabel">Email</span><strong class="dashboardSummaryValue">{user.email}</strong></div>
+						<div class="dashboardSummary"><span class="dashboardSummaryLabel">User id</span><strong class="dashboardSummaryValue recipeMono">{user.id}</strong></div>
+					</div>
+				</Panel>
+				<Panel title="Interaction">
+					<div class="dashboardSummary"><span class="dashboardSummaryLabel">Correlation id</span><strong class="dashboardSummaryValue recipeMono recipeIdentifier">{root.correlationId}</strong><Text size="sm" tone="muted">One id follows this server-side interaction through the service boundary.</Text></div>
+				</Panel>
+			</div>
+
+			<div class="recipeGrid">
+				<Panel title="Other sessions, at render" actions={otherSessions.state === 'found' ? `${otherSessions.value.length} other devices` : undefined}>
+					{otherSessions.state === 'unmeasured' ? (
+						<Alert tone="crit" title="Session list unavailable" live="polite">{otherSessions.failure.message}</Alert>
+					) : otherSessions.state === 'empty' ? (
+						<Empty title="No other sessions" body="This account is only active in the current browser." />
+					) : (
+						<ul class="dashboardSessionList">
+							{otherSessions.value.map((session) => <li class="dashboardSession"><div class="dashboardSessionCopy"><strong class="dashboardSessionId">{session.id}</strong><span class="dashboardSessionTime">Started {formatDate(session.createdAt)}</span></div><Badge tone="neutral">Other device</Badge></li>)}
+						</ul>
+					)}
+				</Panel>
+
+				<Panel title="Browser-side session actions">
+					<div class="dashboardDeviceApp" data-dashboard-devices>
+						<Text size="sm" tone="muted">Loading the browser-side session read…</Text>
+					</div>
+				</Panel>
+			</div>
+
+			<Card>
+				<CardHeader>
+					<CardTitle level={2}>Where to go next</CardTitle>
+					<CardDescription>Dashboard composition is now in place. The editable dashboard below adds the persisted workspace grid.</CardDescription>
+				</CardHeader>
+				<CardBody>
+					<Flex gap={3} wrap>
+						<Button href="/cookbook/editable-dashboard" intent="primary">Arrange dashboard</Button>
+						<Button href="/cookbook/session">Review session recovery</Button>
+					</Flex>
+				</CardBody>
+			</Card>
+		</div>
+	</Container>
+</CookbookLayout>
+
+<script>
+	import { createDashboardExample } from '../../../lib/root/dashboard';
+
+	const app = document.querySelector('[data-dashboard-devices]');
+	if (app instanceof HTMLElement) {
+		const root = createDashboardExample({ latencyMs: 220 });
+		let busy = false;
+		let message = '';
+		let messageTone = '';
+
+		const formatDate = (value) => new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+		const render = (state = 'loading', sessions = []) => {
+			app.replaceChildren();
+			if (state === 'loading') {
+				const loading = document.createElement('p');
+				loading.className = 'recipeStatus';
+				loading.textContent = 'Reading sessions in the browser…';
+				app.append(loading);
+				return;
+			}
+			if (state === 'failure') {
+				const alert = document.createElement('div');
+				alert.className = 'recipeNotice';
+				alert.dataset.tone = 'warn';
+				alert.setAttribute('role', 'alert');
+				alert.textContent = message || 'The browser-side session read failed.';
+				const retry = document.createElement('button');
+				retry.className = 'button buttonSecondary buttonSm';
+				retry.type = 'button';
+				retry.dataset.dashboardRetry = '';
+				retry.textContent = 'Retry read';
+				app.append(alert, retry);
+				return;
+			}
+			const others = sessions.filter((session) => !session.current);
+			if (message) {
+				const notice = document.createElement('div');
+				notice.className = 'recipeNotice';
+				if (messageTone) notice.dataset.tone = messageTone;
+				notice.setAttribute('role', 'status');
+				notice.textContent = message;
+				app.append(notice);
+			}
+			if (!others.length) {
+				const empty = document.createElement('p');
+				empty.className = 'recipeStatus';
+				empty.textContent = 'No other sessions remain.';
+				app.append(empty);
+			} else {
+				const list = document.createElement('ul');
+				list.className = 'dashboardSessionList';
+				for (const session of others) {
+					const item = document.createElement('li');
+					item.className = 'dashboardSession';
+					const copy = document.createElement('div');
+					copy.className = 'dashboardSessionCopy';
+					const id = document.createElement('strong');
+					id.className = 'dashboardSessionId';
+					id.textContent = session.id;
+					const date = document.createElement('span');
+					date.className = 'dashboardSessionTime';
+					date.textContent = `Started ${formatDate(session.createdAt)}`;
+					copy.append(id, date);
+					const revoke = document.createElement('button');
+					revoke.className = 'button buttonSecondary buttonSm';
+					revoke.type = 'button';
+					revoke.dataset.revokeId = session.id;
+					revoke.disabled = busy;
+					revoke.textContent = 'Revoke';
+					item.append(copy, revoke);
+					list.append(item);
+				}
+				app.append(list);
+			}
+			const refresh = document.createElement('div');
+			refresh.className = 'dashboardDeviceActions';
+			const status = document.createElement('span');
+			status.className = 'recipeStatus';
+			status.textContent = busy ? 'Working…' : 'Browser read is independent from the server render above.';
+			const button = document.createElement('button');
+			button.className = 'button buttonGhost buttonSm';
+			button.type = 'button';
+			button.dataset.dashboardRetry = '';
+			button.disabled = busy;
+			button.textContent = 'Refresh';
+			refresh.append(status, button);
+			app.append(refresh);
+		};
+
+		const read = async (preserveMessage = false) => {
+			busy = true; if (!preserveMessage) { message = ''; messageTone = ''; } render('loading');
+			const result = await root.readSessions();
+			busy = false;
+			if (!result.ok) { message = result.error.message; render('failure'); return; }
+			render('ready', result.value);
+		};
+
+		app.addEventListener('click', (event) => {
+			const target = event.target;
+			if (!(target instanceof Element)) return;
+			const retry = target.closest('[data-dashboard-retry]');
+			if (retry) { void read(); return; }
+			const revoke = target.closest('[data-revoke-id]');
+			if (!(revoke instanceof HTMLButtonElement) || busy) return;
+			const id = revoke.dataset.revokeId;
+			if (!id) return;
+			busy = true; message = ''; render('loading');
+			void root.revokeSession(id).then((result) => {
+				busy = false;
+				if (!result.ok) { message = result.error.message; messageTone = result.error.kind === 'conflict' ? 'danger' : 'warn'; }
+				void read(true);
+			});
+		});
+
+		void read();
+	}
+</script>

@@ -1,0 +1,44 @@
+@layer screen {
+	.manualChapterGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: var(--space-6); }
+	.manualReader { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: var(--space-9); align-items: start; }
+	.manualSidebar { position: sticky; inset-block-start: 80px; min-inline-size: 0; }
+	.manualMobileChapters { display: none; }
+	.manualChapterNav { display: grid; gap: var(--space-3); }
+	.manualChapterNav ol { display: grid; gap: var(--space-2); list-style: none; padding: 0; margin: 0; }
+	.manualChapterNav a { white-space: normal; block-size: auto; min-block-size: var(--control-md); padding-block: var(--space-2); overflow-wrap: anywhere; }
+	.manualChapterNumber { display: inline-block; min-inline-size: 2ch; margin-inline-end: var(--space-3); color: var(--ink-3); font-family: var(--font-mono); font-size: var(--text-11); }
+	.manualDownload { margin-block-start: var(--space-5); color: var(--ink-2); font-size: var(--text-12-5); text-decoration: underline; text-underline-offset: 3px; }
+	.manualArticle { display: grid; gap: var(--space-9); min-inline-size: 0; max-inline-size: 850px; }
+	.manualChapterHeader { display: grid; gap: var(--space-4); }
+	.manualSection { display: grid; gap: var(--space-5); min-inline-size: 0; scroll-margin-block-start: var(--space-6); }
+	.manualParagraph, .manualList { color: var(--ink-2); font-size: var(--text-13); line-height: var(--leading-body); }
+	.manualParagraph { max-inline-size: 76ch; }
+	.manualList { display: grid; gap: var(--space-4); padding-inline-start: var(--space-6); list-style: disc; }
+	.manualContents { display: grid; gap: var(--space-3); padding-inline-start: var(--space-5); border-inline-start: 2px solid var(--line); }
+	.manualContents ul, .manualRelated, .manualSources ul { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+	.manualContents a, .manualRelated a { color: var(--ink-2); font-size: var(--text-13); text-decoration: underline; text-underline-offset: 3px; }
+	.manualRelated li, .manualSources li { display: grid; gap: var(--space-2); }
+	.manualSources { display: grid; gap: var(--space-4); padding-block-start: var(--space-5); border-block-start: 1px solid var(--line); }
+	.manualSources code { color: var(--ink-2); font-family: var(--font-mono); font-size: var(--text-11); overflow-wrap: anywhere; }
+	.manualExample { min-inline-size: 0; margin: 0; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-2); }
+	.manualExample figcaption { padding: var(--space-4) var(--space-5); border-block-end: 1px solid var(--line); background: var(--surface-hover); color: var(--ink-3); font-size: var(--text-11); overflow-wrap: anywhere; }
+	.manualExample pre { max-inline-size: 100%; margin: 0; padding: var(--space-5); overflow: auto; background: var(--surface-panel); color: var(--ink-2); font-family: var(--font-mono); font-size: var(--text-12-5); line-height: var(--leading-body); }
+	.manualTableScroll { max-inline-size: 100%; overflow-x: auto; }
+	.manualTable { min-inline-size: 580px; inline-size: 100%; border-collapse: collapse; font-size: var(--text-12); }
+	.manualTable caption { caption-side: top; padding-block-end: var(--space-4); color: var(--ink-3); text-align: start; }
+	.manualTable th, .manualTable td { padding: var(--space-4) var(--space-5); border-block-end: 1px solid var(--line); color: var(--ink-2); line-height: var(--leading-body); text-align: start; vertical-align: top; overflow-wrap: anywhere; }
+	.manualTable th { color: var(--ink); font-weight: var(--weight-medium); }
+	.manualTable thead th { border-block-end-color: var(--line-strong); color: var(--ink-3); font-size: var(--text-10); letter-spacing: var(--tracking-label); text-transform: uppercase; }
+	.manualTable tbody tr:last-child th, .manualTable tbody tr:last-child td { border-block-end: 0; }
+	.manualContinue { padding-block-start: var(--space-6); border-block-start: 1px solid var(--line); }
+	.manualContinue a { block-size: auto; min-block-size: var(--control-md); white-space: normal; }
+	@media (max-width: 1200px) {
+		.manualReader { grid-template-columns: minmax(0, 1fr); gap: var(--space-8); }
+		.manualSidebar { position: static; padding-block-end: var(--space-6); border-block-end: 1px solid var(--line); }
+		.manualDesktopChapters { display: none; }
+		.manualMobileChapters { display: block; }
+		.manualChapterNav ol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+		.manualArticle { max-inline-size: none; }
+	}
+	@media (max-width: 520px) { .manualChapterNav ol { grid-template-columns: minmax(0, 1fr); } }
+}

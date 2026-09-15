@@ -1,0 +1,234 @@
+---
+import { Card, CardBody, CardDescription, CardFooter, CardHeader, CardTitle } from '../../../components/display';
+import { Button } from '../../../components/forms';
+import Container from '../../../components/layout/Container.astro';
+import Flex from '../../../components/layout/Flex.astro';
+import PageHeader from '../../../components/patterns/PageHeader.astro';
+import Text from '../../../components/typography/Text.astro';
+import CookbookLayout from '../../../layouts/CookbookLayout.astro';
+---
+
+<CookbookLayout
+	title="Resilience · Cookbook · flover-astro"
+	description="Controlled response, ordering, and save-recovery examples."
+>
+	<Container width="page">
+		<PageHeader
+			title="Build for the unexpected"
+			description="Break a response, change the order, interrupt a save. Each example keeps a specific promise to the person using it."
+		>
+			<Button slot="actions" href="/cookbook" intent="secondary">All recipes</Button>
+		</PageHeader>
+
+		<div class="recipeStack" data-resilience-app>
+			<div class="recipeNotice" role="status">These isolated simulations change no account data. Each sequence is controlled and repeatable.</div>
+			<div class="recipeDemoGrid">
+				<Card data-response-demo>
+					<CardHeader>
+						<span slot="actions" class="recipeBadge" data-response-badge>Response boundary</span>
+						<CardTitle level={2}>Keep the last good view</CardTitle>
+						<CardDescription>A malformed success cannot replace validated data. A real empty result can.</CardDescription>
+					</CardHeader>
+					<CardBody>
+						<div class="recipeResult" data-response-result>
+							<Text size="sm" tone="muted">Choose a response to begin.</Text>
+						</div>
+						<Text size="sm" tone="muted" class="recipeStatus" data-response-status role="status" aria-live="polite">No successful read yet.</Text>
+					</CardBody>
+					<CardFooter>
+						<div class="recipeChoiceGroup" aria-label="Response scenarios">
+							{[
+								['valid', 'Load valid data'],
+								['malformed', 'Wrong envelope'],
+								['partial', 'Malformed list item'],
+								['unavailable', 'Refresh failure'],
+								['empty', 'Empty list']
+							].map(([mode, label]) => <Button size="sm" intent={mode === 'valid' ? 'primary' : 'secondary'} data-response-mode={mode}>{label}</Button>)}
+						</div>
+					</CardFooter>
+				</Card>
+
+				<Card data-race-demo>
+					<CardHeader>
+						<span slot="actions" class="recipeBadge">Response order</span>
+						<CardTitle level={2}>Let the latest selection win</CardTitle>
+						<CardDescription>Two reads finish out of order. The older one even ignores cancellation.</CardDescription>
+					</CardHeader>
+					<CardBody>
+						<ol class="recipeSteps">
+							<li>Start an earlier read and hold its response.</li>
+							<li>Make a newer selection and display its result.</li>
+							<li>Release the older response without changing the view.</li>
+						</ol>
+						<div class="recipeResult" data-race-result><Text size="sm" tone="muted">Start the sequence to make two selections.</Text></div>
+						<Text size="sm" tone="muted" class="recipeStatus" data-race-status role="status" aria-live="polite">Idle.</Text>
+					</CardBody>
+					<CardFooter>
+						<div class="recipeFormActions">
+							<Button size="sm" intent="primary" data-race-start>Start sequence</Button>
+							<Button size="sm" data-race-release disabled>Release earlier response</Button>
+						</div>
+					</CardFooter>
+				</Card>
+			</div>
+
+			<Card data-note-demo>
+				<CardHeader>
+					<span slot="actions" class="recipeBadge" data-note-badge>Outcome unknown</span>
+					<CardTitle level={2}>Keep the draft. Check the save.</CardTitle>
+					<CardDescription>A missing response does not tell you whether a write happened. Confirm its outcome before sending another.</CardDescription>
+				</CardHeader>
+				<CardBody>
+					<div class="recipeGrid">
+						<form class="recipeForm" data-note-form novalidate>
+							<div class="recipeField"><label for="note-title">Note title</label><input id="note-title" required data-note-title value="Launch checklist" /></div>
+							<div class="recipeField"><label for="note-body">Note body</label><textarea id="note-body" data-note-body>Review the recovery states before shipping.</textarea><small>Drafts stay on this page only. Resetting the example clears them.</small></div>
+							<div class="recipeFormActions"><Button type="submit" intent="primary" data-note-save>Save note</Button><Button type="button" data-note-check disabled>Check save outcome</Button></div>
+							<Text size="sm" class="recipeStatus" data-note-status role="status" aria-live="polite">This draft has not been saved.</Text>
+							<div class="recipeNotice recipeHidden" data-note-message role="alert"></div>
+						</form>
+						<div class="recipeStack">
+							<div class="recipeField"><label for="note-mode">Next save behavior</label><select id="note-mode" class="recipeSelect" data-note-mode><option value="lost-response">Commit, then lose the response</option><option value="not-delivered">Request never reaches the server</option><option value="refused">Server refuses the title</option><option value="success">Save successfully</option></select></div>
+							<label class="recipeChoice"><input type="checkbox" data-note-fail-checks /> Make receipt checks fail</label>
+							<div class="recipeStats"><div class="recipeStat"><span class="recipeStatLabel">Simulated commits</span><span class="recipeStatValue" data-note-commits>0</span></div><div class="recipeStat"><span class="recipeStatLabel">Confirmed revision</span><span class="recipeStatValue" data-note-revision>—</span></div></div>
+							<div class="recipeNotice recipeHidden" data-note-receipt></div>
+						</div>
+					</div>
+				</CardBody>
+				<CardFooter><Flex direction="column" gap={4}><Text size="sm" tone="muted">The example server deduplicates operation IDs and gives a final answer about each save. “Not found yet” is not enough to safely start another write.</Text><div><Button size="sm" data-note-reset>Reset note example</Button></div></Flex></CardFooter>
+			</Card>
+		</div>
+	</Container>
+</CookbookLayout>
+
+<script>
+	import { createRaceExample, createNoteExample, readResponseExample } from '../../../lib/root/resilience';
+
+	const app = document.querySelector('[data-resilience-app]');
+	if (app instanceof HTMLElement) {
+		const signal = () => new AbortController().signal;
+		const text = (selector, value) => { const node = app.querySelector(selector); if (node) node.textContent = value; };
+		const responseResult = app.querySelector('[data-response-result]');
+		const responseBadge = app.querySelector('[data-response-badge]');
+		const renderItems = (node, items) => {
+			if (!(node instanceof HTMLElement)) return;
+			if (!items.length) { node.innerHTML = '<p class="typeText typeTextSm typeTextDefault">The request succeeded. No items were found.</p>'; return; }
+			const list = document.createElement('ul');
+			list.className = 'recipeResultList';
+			for (const item of items) {
+				const row = document.createElement('li');
+				row.className = 'recipeResultItem';
+				const name = document.createElement('span'); name.textContent = item.name;
+				const host = document.createElement('small'); host.textContent = item.host;
+				row.append(name, host); list.append(row);
+			}
+			node.replaceChildren(list);
+		};
+		let responseController;
+		let lastItems;
+		let responseRun = 0;
+		const runResponse = async (mode) => {
+			responseController?.abort();
+			responseController = new AbortController();
+			const run = ++responseRun;
+			text('[data-response-status]', 'Requesting the next response…');
+			if (responseBadge) responseBadge.textContent = 'Loading';
+			const result = await readResponseExample(mode, responseController.signal);
+			if (run !== responseRun) return;
+			if (result.ok) {
+				lastItems = result.value;
+				renderItems(responseResult, result.value);
+				text('[data-response-status]', result.value.length ? 'Valid response accepted.' : 'Valid empty response accepted.');
+				if (responseBadge) { responseBadge.textContent = 'Response boundary'; delete responseBadge.dataset.tone; }
+			} else {
+				if (lastItems) renderItems(responseResult, lastItems);
+				text('[data-response-status]', lastItems ? `Refresh failed. Previous data is still visible and may be stale. ${result.error.message}` : `Request failed. No data has been accepted. ${result.error.message}`);
+				if (responseBadge) { responseBadge.textContent = lastItems ? 'Stale data' : 'Request failed'; responseBadge.dataset.tone = 'warn'; }
+			}
+		};
+		app.querySelectorAll('[data-response-mode]').forEach((button) => button.addEventListener('click', () => void runResponse(button.dataset.responseMode)));
+
+		const race = createRaceExample();
+		const raceResult = app.querySelector('[data-race-result]');
+		const raceStart = app.querySelector('[data-race-start]');
+		const raceRelease = app.querySelector('[data-race-release]');
+		let racePhase = 'idle';
+		let earlierPromise;
+		const setRacePhase = (phase) => {
+			racePhase = phase;
+			if (raceStart instanceof HTMLButtonElement) { raceStart.disabled = phase === 'running' || phase === 'waiting'; raceStart.textContent = phase === 'complete' ? 'Replay sequence' : 'Start sequence'; }
+			if (raceRelease instanceof HTMLButtonElement) raceRelease.disabled = phase !== 'waiting';
+			text('[data-race-status]', phase === 'idle' ? 'Idle.' : phase === 'running' ? 'The earlier response is held while the newer selection loads.' : phase === 'waiting' ? 'Newer selection is visible. The earlier response is still held.' : 'Earlier response delivered. The newer selection remains visible.');
+		};
+		const showRace = (items) => renderItems(raceResult, items);
+		const startRace = async () => {
+			setRacePhase('running');
+			earlierPromise = race.read('earlier', signal());
+			const newer = await race.read('newer', signal());
+			if (newer.ok) showRace(newer.value);
+			setRacePhase('waiting');
+		};
+		const releaseRace = async () => {
+			if (racePhase !== 'waiting') return;
+			race.release();
+			await earlierPromise;
+			setRacePhase('complete');
+		};
+		raceStart?.addEventListener('click', () => void startRace());
+		raceRelease?.addEventListener('click', () => void releaseRace());
+
+		let notes = createNoteExample();
+		let noteDraft = { title: 'Launch checklist', body: 'Review the recovery states before shipping.' };
+		let noteAttempt;
+		let noteConfirmed;
+		let notePhase = 'ready';
+		const noteTitle = app.querySelector('[data-note-title]');
+		const noteBody = app.querySelector('[data-note-body]');
+		const noteSave = app.querySelector('[data-note-save]');
+		const noteCheck = app.querySelector('[data-note-check]');
+		const noteBadge = app.querySelector('[data-note-badge]');
+		const noteMessage = app.querySelector('[data-note-message]');
+		const renderNote = () => {
+			const unknown = notePhase === 'unknown' || notePhase === 'checking';
+			const saved = notePhase === 'ready' && noteConfirmed && noteDraft.title === noteConfirmed.draft.title && noteDraft.body === noteConfirmed.draft.body;
+			if (noteBadge) { noteBadge.textContent = unknown ? 'Outcome unknown' : saved ? 'Saved' : 'Draft'; noteBadge.dataset.tone = unknown ? 'warn' : saved ? 'accent' : ''; }
+			if (noteSave instanceof HTMLButtonElement) noteSave.disabled = notePhase === 'saving' || notePhase === 'checking' || notePhase === 'unknown' || saved;
+			if (noteCheck instanceof HTMLButtonElement) noteCheck.disabled = notePhase !== 'unknown';
+			text('[data-note-status]', notePhase === 'saving' ? 'Saving the captured draft… You can keep editing.' : notePhase === 'checking' ? 'Checking the existing operation. No new write is being sent.' : notePhase === 'unknown' ? 'Save outcome unknown. Your draft is safe here; check the outcome before saving again.' : notePhase === 'refused' ? 'Save refused. Your input has been preserved.' : notePhase === 'not-recorded' ? 'No save was recorded. Your draft is ready for another attempt.' : saved ? 'Saved. The current draft matches the confirmed receipt.' : noteConfirmed ? 'The earlier draft is saved. Your newer edits are still unsaved.' : 'This draft has not been saved.');
+			text('[data-note-commits]', String(notes.committed()));
+			text('[data-note-revision]', noteConfirmed ? String(noteConfirmed.revision) : '—');
+			if (noteMessage instanceof HTMLElement) {
+				if (notePhase === 'unknown' || notePhase === 'refused') { noteMessage.classList.remove('recipeHidden'); noteMessage.dataset.tone = notePhase === 'unknown' ? 'warn' : 'danger'; noteMessage.textContent = notePhase === 'unknown' ? 'The outcome needs confirmation. Checking the receipt does not repeat the write.' : 'The note was not saved. Your input is still here.'; }
+				else noteMessage.classList.add('recipeHidden');
+			}
+		};
+		const saveNote = async () => {
+			if (notePhase === 'saving' || notePhase === 'checking' || notePhase === 'unknown' || !noteDraft.title.trim()) { renderNote(); return; }
+			noteAttempt = { operationId: crypto.randomUUID(), draft: { ...noteDraft } };
+			notePhase = 'saving'; renderNote();
+			const result = await notes.save(noteAttempt, signal());
+			if (result.ok) { noteConfirmed = result.value; noteAttempt = null; notePhase = 'ready'; }
+			else if (result.error.kind === 'timeout' || result.error.kind === 'unavailable') notePhase = 'unknown';
+			else { noteAttempt = null; notePhase = 'refused'; }
+			renderNote();
+		};
+		const checkNote = async () => {
+			if (!noteAttempt || notePhase !== 'unknown') return;
+			notePhase = 'checking'; renderNote();
+			const result = await notes.find(noteAttempt.operationId, signal());
+			if (!result.ok) notePhase = 'unknown';
+			else if (!result.value) { noteAttempt = null; notePhase = 'not-recorded'; }
+			else { noteConfirmed = result.value; noteAttempt = null; notePhase = 'ready'; }
+			renderNote();
+		};
+		noteTitle?.addEventListener('input', (event) => { noteDraft = { ...noteDraft, title: event.currentTarget.value }; renderNote(); });
+		noteBody?.addEventListener('input', (event) => { noteDraft = { ...noteDraft, body: event.currentTarget.value }; renderNote(); });
+		app.querySelector('[data-note-form]')?.addEventListener('submit', (event) => { event.preventDefault(); void saveNote(); });
+		noteCheck?.addEventListener('click', () => void checkNote());
+		app.querySelector('[data-note-mode]')?.addEventListener('change', (event) => notes.setSaveMode(event.currentTarget.value));
+		app.querySelector('[data-note-fail-checks]')?.addEventListener('change', (event) => notes.failChecks(event.currentTarget.checked));
+		app.querySelector('[data-note-reset]')?.addEventListener('click', () => { notes = createNoteExample(); noteDraft = { title: 'Launch checklist', body: 'Review the recovery states before shipping.' }; if (noteTitle) noteTitle.value = noteDraft.title; if (noteBody) noteBody.value = noteDraft.body; noteAttempt = null; noteConfirmed = null; notePhase = 'ready'; renderNote(); });
+		window.addEventListener('pagehide', () => { responseController?.abort(); race.dispose(); }, { once: true });
+		renderNote();
+	}
+</script>

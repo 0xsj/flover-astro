@@ -1,0 +1,9 @@
+---
+import GraphFrame from '../GraphFrame.astro';
+import type { GraphFrameProps } from '../../../lib/charts';
+
+type Props = Omit<GraphFrameProps, 'layout' | 'rootId'>;
+const { nodes, edges, width, height, ...rest } = Astro.props as Props;
+---
+
+<GraphFrame {...rest} {nodes} {edges} {width} {height} layout="force" title="Force network" />

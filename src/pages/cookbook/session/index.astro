@@ -1,0 +1,156 @@
+---
+import { Card, CardBody, CardDescription, CardFooter, CardHeader, CardTitle } from '../../../components/display';
+import { Button } from '../../../components/forms';
+import Container from '../../../components/layout/Container.astro';
+import Flex from '../../../components/layout/Flex.astro';
+import PageHeader from '../../../components/patterns/PageHeader.astro';
+import Text from '../../../components/typography/Text.astro';
+import CookbookLayout from '../../../layouts/CookbookLayout.astro';
+---
+
+<CookbookLayout
+	title="Session recovery · Cookbook · flover-astro"
+	description="Recover an in-progress workflow without guessing which account is active."
+>
+	<Container width="page">
+		<PageHeader
+			title="Pick up where you left off"
+			description="Expire a session while editing or saving. Verify the account, return to the editor, and resolve the original save."
+		>
+			<Button slot="actions" href="/cookbook" intent="secondary">All recipes</Button>
+		</PageHeader>
+
+		<div class="recipeStack" data-session-app data-account-id="astro-demo-account">
+			<div class="recipeNotice" data-session-notice role="status" aria-live="polite">Opening the isolated session example…</div>
+			<Card>
+				<CardHeader>
+					<span slot="actions" class="recipeBadge" data-session-badge>Checking session</span>
+					<CardTitle level={2}>Identity is part of the recovery contract</CardTitle>
+					<CardDescription>This page uses an isolated memory identity endpoint. It never reads or changes the Astro session cookie.</CardDescription>
+				</CardHeader>
+				<CardBody>
+					<div class="recipeFormActions">
+						<Button size="sm" intent="primary" data-session-verify>Verify account</Button>
+						<Button size="sm" data-session-owner>Sign in as owner</Button>
+						<Button size="sm" data-session-other>Use another account</Button>
+						<Button size="sm" data-session-expire>Expire session</Button>
+					</div>
+					<Text size="sm" class="recipeStatus" data-session-status role="status" aria-live="polite">Verification has not run yet.</Text>
+				</CardBody>
+			</Card>
+
+			<Card>
+				<CardHeader>
+					<span slot="actions" class="recipeBadge" data-session-save-badge>Waiting</span>
+					<CardTitle level={2}>Recover a save after expiry</CardTitle>
+					<CardDescription>When a save response arrives after the session disappears, the draft stays captured and the receipt can be checked after re-authentication.</CardDescription>
+				</CardHeader>
+				<CardBody>
+					<form class="recipeForm" data-session-form novalidate>
+						<div class="recipeField"><label for="session-item-name">Item name</label><input id="session-item-name" data-session-name disabled /></div>
+						<div class="recipeField"><label for="session-item-host">Hostname</label><input id="session-item-host" data-session-host disabled /></div>
+						<label class="recipeChoice"><input type="checkbox" data-session-expire-after checked /> Expire after the server commits the next save</label>
+						<div class="recipeFormActions"><Button type="submit" intent="primary" data-session-save disabled>Save changes</Button><Button type="button" data-session-check disabled>Check original save</Button></div>
+						<Text size="sm" class="recipeStatus" data-session-save-status role="status" aria-live="polite">Loading the example item…</Text>
+						<div class="recipeNotice recipeHidden" data-session-message role="alert"></div>
+					</form>
+				</CardBody>
+				<CardFooter><Flex direction="column" gap={4}><Text size="sm" tone="muted">Recovery verifies the original account before checking the operation receipt. It never resends an uncertain write.</Text><Button size="sm" data-session-reset>Reset session example</Button></Flex></CardFooter>
+			</Card>
+		</div>
+	</Container>
+</CookbookLayout>
+
+<script>
+	import { createSessionExample } from '../../../lib/root/session-recovery';
+
+	const app = document.querySelector('[data-session-app]');
+	if (app instanceof HTMLElement) {
+		const accountId = app.dataset.accountId ?? 'astro-demo-account';
+		const root = createSessionExample(accountId);
+		const signal = () => new AbortController().signal;
+		const text = (selector, value) => { const node = app.querySelector(selector); if (node) node.textContent = value; };
+		const notice = app.querySelector('[data-session-notice]');
+		const badge = app.querySelector('[data-session-badge]');
+		const saveBadge = app.querySelector('[data-session-save-badge]');
+		const nameInput = app.querySelector('[data-session-name]');
+		const hostInput = app.querySelector('[data-session-host]');
+		const saveButton = app.querySelector('[data-session-save]');
+		const checkButton = app.querySelector('[data-session-check]');
+		const expireAfter = app.querySelector('[data-session-expire-after]');
+		let current;
+		let baseline;
+		let draft;
+		let confirmed;
+		let attempt;
+		let busy = false;
+		let sessionState = 'checking';
+		const setTone = (node, tone) => { if (!(node instanceof HTMLElement)) return; if (tone) node.dataset.tone = tone; else delete node.dataset.tone; };
+		const dirty = () => Boolean(draft && baseline && (draft.name !== baseline.name || draft.host !== baseline.host));
+		const checkpoint = () => { if (current && baseline && draft) root.checkpoint({ item: current, draft, baseline, confirmed: confirmed ?? null, attempt: attempt ?? null }); };
+		const render = () => {
+			if (nameInput instanceof HTMLInputElement) nameInput.value = draft?.name ?? '';
+			if (hostInput instanceof HTMLInputElement) hostInput.value = draft?.host ?? '';
+			if (nameInput instanceof HTMLInputElement) nameInput.disabled = !current || busy;
+			if (hostInput instanceof HTMLInputElement) hostInput.disabled = !current || busy;
+			const unresolved = Boolean(attempt && !confirmed);
+			if (saveButton instanceof HTMLButtonElement) saveButton.disabled = !current || !dirty() || busy || unresolved;
+			if (checkButton instanceof HTMLButtonElement) checkButton.disabled = busy || !attempt;
+			if (badge) { badge.textContent = sessionState === 'active' ? 'Verified owner' : sessionState === 'wrong-account' ? 'Wrong account' : sessionState === 'expired' ? 'Expired' : sessionState === 'offline' ? 'Verification unavailable' : 'Checking session'; setTone(badge, sessionState === 'active' ? 'accent' : sessionState === 'checking' ? '' : 'warn'); }
+			if (saveBadge) { saveBadge.textContent = unresolved ? 'Needs resolution' : dirty() ? 'Unsaved changes' : confirmed ? 'Confirmed' : 'Draft'; setTone(saveBadge, unresolved ? 'warn' : confirmed ? 'accent' : dirty() ? 'accent' : ''); }
+		};
+		const verify = async () => {
+			busy = true; render(); text('[data-session-status]', 'Verifying the current account…');
+			const result = await root.verify(signal());
+			busy = false;
+			if (result.ok) { sessionState = result.value.accountId === accountId ? 'active' : 'wrong-account'; text('[data-session-status]', sessionState === 'active' ? `Verified ${result.value.accountId}. Recovery may continue.` : 'A different account is active. This workspace remains protected.'); setTone(notice, sessionState === 'active' ? '' : 'warn'); }
+			else { sessionState = result.error.kind === 'unavailable' ? 'offline' : 'expired'; text('[data-session-status]', result.error.message); setTone(notice, 'warn'); }
+			render();
+		};
+		const selectItem = async () => {
+			const result = await root.detail('api', signal());
+			if (!result.ok) { text('[data-session-save-status]', result.error.message); setTone(notice, 'warn'); return; }
+			const saved = root.loadDraft('api');
+			current = saved.ok && saved.value ? saved.value.item : result.value;
+			baseline = saved.ok && saved.value ? saved.value.baseline : { name: result.value.name, host: result.value.host };
+			draft = saved.ok && saved.value ? saved.value.draft : { name: result.value.name, host: result.value.host };
+			confirmed = saved.ok && saved.value ? saved.value.confirmed : null;
+			attempt = saved.ok && saved.value ? saved.value.attempt : null;
+			if (!saved.ok || !saved.value) checkpoint();
+			text('[data-session-save-status]', dirty() ? 'A draft is ready and checkpointed in this tab.' : 'This draft matches the loaded item.');
+			render();
+		};
+		const save = async () => {
+			if (!current || !draft || !dirty() || busy || (attempt && !confirmed)) return;
+			attempt = { id: current.id, expectedRevision: current.revision, operationId: crypto.randomUUID(), draft: { ...draft } };
+			checkpoint(); busy = true; render();
+			const result = await root.save(attempt, signal());
+			busy = false;
+			if (result.ok) { confirmed = result.value; current = result.value.item; baseline = { name: result.value.item.name, host: result.value.item.host }; attempt = null; checkpoint(); text('[data-session-save-status]', 'Saved and confirmed.'); }
+			else { text('[data-session-save-status]', result.error.message); if (result.error.kind === 'unauthenticated' || result.error.kind === 'timeout' || result.error.kind === 'unavailable') { sessionState = 'expired'; setTone(notice, 'warn'); } else { attempt = null; checkpoint(); setTone(notice, 'danger'); } }
+			render();
+		};
+		const check = async () => {
+			if (!attempt || busy) return;
+			busy = true; text('[data-session-save-status]', 'Checking the original operation. No new write is being sent.'); render();
+			const result = await root.find(attempt.operationId, signal());
+			busy = false;
+			if (!result.ok) { text('[data-session-save-status]', result.error.message); setTone(notice, 'warn'); }
+			else if (!result.value) { attempt = null; checkpoint(); text('[data-session-save-status]', 'No save was recorded. Your draft is ready for another attempt.'); }
+			else { confirmed = result.value; current = result.value.item; baseline = { name: result.value.item.name, host: result.value.item.host }; attempt = null; checkpoint(); text('[data-session-save-status]', 'Receipt confirmed after re-authentication. The original write was not repeated.'); setTone(notice, ''); }
+			render();
+		};
+		app.querySelector('[data-session-verify]')?.addEventListener('click', () => void verify());
+		app.querySelector('[data-session-owner]')?.addEventListener('click', () => { root.signInAs('owner'); void verify(); });
+		app.querySelector('[data-session-other]')?.addEventListener('click', () => { root.signInAs('other'); void verify(); });
+		app.querySelector('[data-session-expire]')?.addEventListener('click', () => { root.expire(); sessionState = 'expired'; text('[data-session-status]', 'The demo session is expired. Verify again before recovery.'); setTone(notice, 'warn'); render(); });
+		expireAfter?.addEventListener('change', (event) => root.setExpireAfterCommit(event.currentTarget.checked));
+		nameInput?.addEventListener('input', (event) => { draft = { ...draft, name: event.currentTarget.value }; checkpoint(); render(); });
+		hostInput?.addEventListener('input', (event) => { draft = { ...draft, host: event.currentTarget.value }; checkpoint(); render(); });
+		app.querySelector('[data-session-form]')?.addEventListener('submit', (event) => { event.preventDefault(); void save(); });
+		checkButton?.addEventListener('click', () => void check());
+		app.querySelector('[data-session-reset]')?.addEventListener('click', () => window.location.reload());
+		window.addEventListener('pagehide', () => root.dispose(), { once: true });
+		void (async () => { const initialized = root.initialize(); if (!initialized.ok) { setText(notice, initialized.error.message); setTone(notice, 'warn'); return; } await selectItem(); await verify(); setText(notice, 'The isolated session example is ready.'); })();
+	}
+</script>

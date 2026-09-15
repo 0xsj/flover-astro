@@ -1,0 +1,133 @@
+---
+import { Badge, Card, CardBody, CardDescription, CardHeader, CardTitle, Panel } from '../../../components/display';
+import { Button } from '../../../components/forms';
+import Container from '../../../components/layout/Container.astro';
+import PageHeader from '../../../components/patterns/PageHeader.astro';
+import Text from '../../../components/typography/Text.astro';
+import CookbookLayout from '../../../layouts/CookbookLayout.astro';
+import { FAILURE_KINDS } from '../../../lib/kernel';
+import { isActive, parsePlan } from '../../../lib/chaos';
+import '../../../styles/cookbook.css';
+
+const targets = [
+	{ pattern: '*', label: 'everything', note: 'every request, including a guard' },
+	{ pattern: 'GET /auth/me', label: 'the guard', note: 'identity lookup and its boundary' },
+	{ pattern: 'GET /auth/sessions', label: 'sessions', note: 'session list reads' },
+	{ pattern: 'DELETE /auth/sessions/*', label: 'revoke a session', note: 'an optimistic write' },
+	{ pattern: 'GET /me/activity', label: 'activity', note: 'the paged ledger read' },
+	{ pattern: 'POST /auth/sign-in', label: 'sign in', note: 'the form boundary when it is ported' },
+	{ pattern: 'POST /auth/sign-up', label: 'sign up', note: 'registration and conflict handling when it is ported' }
+];
+const effects = [
+	{ value: '', label: 'no effect', note: '' },
+	...FAILURE_KINDS.map((kind) => ({ value: `fail:${kind}`, label: `fail: ${kind}`, note: 'returns a failure instead of calling through' })),
+	{ value: 'empty:list', label: 'empty: list', note: 'a SUCCESS with no rows' },
+	{ value: 'empty:null', label: 'empty: null', note: 'a SUCCESS whose value is absent' },
+	{ value: 'latency:2000', label: 'latency: 2s', note: 'reveals loading states' },
+	{ value: 'latency:6000', label: 'latency: 6s', note: 'long enough to be annoying' },
+	{ value: 'hang', label: 'hang', note: 'never settles until the caller cancels' }
+];
+const screens = [
+	{ href: '/cookbook/failures', label: 'Failures' },
+	{ href: '/api/auth/sessions', label: 'Sessions API' }
+];
+const underChaos = isActive(parsePlan(Astro.url.searchParams));
+---
+
+<CookbookLayout
+	title="Chaos · Cookbook · flover-astro"
+	description="Build a real transport plan and follow it into an Astro server boundary."
+>
+	<Container width="page">
+		<PageHeader
+			title="Break the application on purpose"
+			description="Build a query plan, then use it. The plan is parsed at the server boundary and the composition root wraps the transport; this page does not preview a fake failure."
+		>
+			<Button slot="actions" href="/cookbook" intent="secondary">All recipes</Button>
+		</PageHeader>
+
+		<div class="recipeStack" data-chaos-app>
+			{underChaos && <div class="recipeNotice" data-tone="warn" role="status"><strong>This page is itself under a chaos plan.</strong> Drop the query string to stop it.</div>}
+
+			<Card>
+				<CardHeader>
+					<CardTitle level={2}>Build a plan</CardTitle>
+					<CardDescription>The builder writes the same `METHOD /path=effect` syntax consumed by the Astro server root. The first matching rule wins.</CardDescription>
+				</CardHeader>
+				<CardBody>
+					<div class="recipeToolbar">
+						<div class="recipeField"><label for="chaos-target">Target</label><select id="chaos-target" class="recipeSelect" data-chaos-target>{targets.map((target) => <option value={target.pattern}>{target.label}</option>)}</select><small data-chaos-target-note>{targets[4].note}</small></div>
+						<div class="recipeField"><label for="chaos-effect">Effect</label><select id="chaos-effect" class="recipeSelect" data-chaos-effect>{effects.map((effect) => <option value={effect.value || 'none'}>{effect.label}</option>)}</select><small data-chaos-effect-note>{effects[1].note}</small></div>
+						<div class="recipeField"><label for="chaos-seed">Seed</label><input id="chaos-seed" class="recipeSelect" data-chaos-seed placeholder="optional" inputmode="numeric" /><small>Only matters for a probabilistic rule.</small></div>
+					</div>
+					<div class="recipeStack recipeStackTight">
+						<div><div class="recipeGroupLabel">the plan</div><pre class="recipeCode" data-chaos-query>?</pre><p class="recipeTableMeta"><code>METHOD /path</code>, where <code>*</code> covers a run of segments. Several rules join with <code>;</code>.</p></div>
+					</div>
+				</CardBody>
+			</Card>
+
+			<Card>
+				<CardHeader><CardTitle level={2}>Now use a real surface under it</CardTitle><CardDescription>The current Astro port has a server-backed failure surface and a raw session endpoint. The larger authenticated application screens will join this list with the app-shell port.</CardDescription></CardHeader>
+				<CardBody>
+					<div class="recipeFormActions">{screens.map((screen) => <Button size="sm" data-chaos-screen href={screen.href}>{screen.label}</Button>)}</div>
+					<Text size="sm" tone="muted">The plan travels in the query string. It survives navigation within a surface and stops when the query is removed.</Text>
+				</CardBody>
+			</Card>
+
+			<Panel title="Four axes">
+				<div class="recipeAxisGrid">
+					<div class="recipeAxis"><Badge tone="crit">fail</Badge><Text size="sm" tone="muted">Return a failure instead of calling through. Transport failures can happen on any call.</Text></div>
+					<div class="recipeAxis"><Badge tone="warn">empty</Badge><Text size="sm" tone="muted">Return a success that is empty. Empty is a value, not a quieter failure.</Text></div>
+					<div class="recipeAxis"><Badge>latency</Badge><Text size="sm" tone="muted">Wait, then do the real thing. Loading states become visible.</Text></div>
+					<div class="recipeAxis"><Badge>hang</Badge><Text size="sm" tone="muted">Never settle until the caller cancels. This is a stuck spinner, not a timeout.</Text></div>
+				</div>
+			</Panel>
+
+			<div class="recipeNotice">Production note: <code>withChaos</code> returns the original client in production. This lab remains a development inspection tool, not a feature flag.</div>
+		</div>
+	</Container>
+</CookbookLayout>
+
+<script>
+	const app = document.querySelector('[data-chaos-app]');
+	if (app instanceof HTMLElement) {
+		const target = app.querySelector('[data-chaos-target]');
+		const effect = app.querySelector('[data-chaos-effect]');
+		const seed = app.querySelector('[data-chaos-seed]');
+		const targetNotes = {
+			'*': 'every request, including a guard',
+			'GET /auth/me': 'identity lookup and its boundary',
+			'GET /auth/sessions': 'session list reads',
+			'DELETE /auth/sessions/*': 'an optimistic write',
+			'GET /me/activity': 'the paged ledger read',
+			'POST /auth/sign-in': 'the form boundary when it is ported',
+			'POST /auth/sign-up': 'registration and conflict handling when it is ported'
+		};
+		const effectNotes = {
+			'': '',
+			'empty:list': 'a SUCCESS with no rows',
+			'empty:null': 'a SUCCESS whose value is absent',
+			'latency:2000': 'reveals loading states',
+			'latency:6000': 'long enough to be annoying',
+			hang: 'never settles until the caller cancels'
+		};
+		const text = (selector, value) => { const node = app.querySelector(selector); if (node) node.textContent = value; };
+		const render = () => {
+			const pattern = target instanceof HTMLSelectElement ? target.value : 'GET /me/activity';
+			const chosen = effect instanceof HTMLSelectElement && effect.value !== 'none' ? effect.value : '';
+			const seedValue = seed instanceof HTMLInputElement ? seed.value.trim() : '';
+			const rule = chosen ? `${pattern}=${chosen}` : '';
+			const query = rule ? `?chaos=${encodeURIComponent(rule)}${seedValue ? `&chaosSeed=${encodeURIComponent(seedValue)}` : ''}` : '';
+			text('[data-chaos-query]', query || '— no effect chosen —');
+			text('[data-chaos-target-note]', targetNotes[pattern] ?? '');
+			text('[data-chaos-effect-note]', chosen.startsWith('fail:') ? 'returns a failure instead of calling through' : effectNotes[chosen] ?? '');
+			app.querySelectorAll('[data-chaos-screen]').forEach((link) => {
+				if (link instanceof HTMLAnchorElement) link.href = `${link.pathname}${query}`;
+			});
+		};
+		target?.addEventListener('change', render);
+		effect?.addEventListener('change', render);
+		seed?.addEventListener('input', render);
+		render();
+	}
+</script>

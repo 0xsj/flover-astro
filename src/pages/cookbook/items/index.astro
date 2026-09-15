@@ -1,0 +1,314 @@
+---
+import { Card, CardBody, CardDescription, CardFooter, CardHeader, CardTitle } from '../../../components/display';
+import { Button } from '../../../components/forms';
+import Container from '../../../components/layout/Container.astro';
+import Flex from '../../../components/layout/Flex.astro';
+import PageHeader from '../../../components/patterns/PageHeader.astro';
+import Text from '../../../components/typography/Text.astro';
+import CookbookLayout from '../../../layouts/CookbookLayout.astro';
+import '../../../styles/cookbook.css';
+---
+
+<CookbookLayout
+	title="Items · Cookbook · flover-astro"
+	description="A durable item editing workflow using tab-local storage and operation receipts."
+>
+	<Container width="page">
+		<PageHeader
+			title="From a list to a saved change"
+			description="Browse an item, edit its details, and follow the save through success or recovery. Your draft has its own lifecycle."
+		>
+			<Button slot="actions" href="/cookbook" intent="secondary">All recipes</Button>
+		</PageHeader>
+
+		<div class="recipeStack" data-item-app data-account-id="astro-demo-account">
+			<div class="recipeNotice" data-item-notice role="status" aria-live="polite">Opening the isolated item workspace…</div>
+			<div class="recipeGrid">
+				<Card class="recipePanel">
+					<CardHeader>
+						<CardTitle level={2}>Items</CardTitle>
+						<CardDescription>Records live in a tab-local demo document. Draft checkpoints are private to this account.</CardDescription>
+					</CardHeader>
+					<CardBody>
+						<div class="recipeToolbar">
+							<div class="recipeField">
+								<label for="item-picker">Selected item</label>
+								<select id="item-picker" class="recipeSelect" data-item-select disabled>
+									<option>Loading items…</option>
+								</select>
+							</div>
+							<Button size="sm" data-item-refresh disabled>Refresh</Button>
+						</div>
+						<Text size="sm" tone="muted" class="recipeStatus" data-item-list-status role="status">No collection has been accepted yet.</Text>
+						<ul class="recipeList" data-item-list aria-label="Available items"></ul>
+					</CardBody>
+				</Card>
+
+				<Card class="recipePanel">
+					<CardHeader>
+						<span slot="actions" class="recipeBadge" data-item-badge>Waiting</span>
+						<CardTitle level={2}>Edit the selected item</CardTitle>
+						<CardDescription>Saving captures an operation id. If the response disappears, check its receipt before trying again.</CardDescription>
+					</CardHeader>
+					<CardBody>
+						<form class="recipeForm" data-item-form novalidate>
+							<div class="recipeField">
+								<label for="item-name">Item name</label>
+								<input id="item-name" name="name" maxlength="120" autocomplete="off" data-item-name disabled />
+							</div>
+							<div class="recipeField">
+								<label for="item-host">Hostname</label>
+								<input id="item-host" name="host" maxlength="253" autocomplete="off" data-item-host disabled />
+								<small>Letters, numbers, dots and hyphens. Hostnames are unique.</small>
+							</div>
+							<div class="recipeFormActions">
+								<Button type="submit" intent="primary" data-item-save disabled>Save changes</Button>
+								<Button type="button" data-item-check disabled>Check save outcome</Button>
+								<Button type="button" data-item-release class="recipeHidden">Release held response</Button>
+							</div>
+							<Text size="sm" class="recipeStatus" data-item-status role="status" aria-live="polite">Choose an item to begin.</Text>
+						</form>
+					</CardBody>
+					<CardFooter>
+						<Text size="sm" tone="muted">Reloading keeps this demo’s records and draft checkpoints in the tab.</Text>
+						<Button size="sm" data-item-reset>Reset demo</Button>
+					</CardFooter>
+				</Card>
+			</div>
+
+			<Card>
+				<CardHeader>
+					<CardTitle level={2}>Try an explicit save outcome</CardTitle>
+					<CardDescription>Each mode is a controlled fixture scenario. The root never guesses whether an uncertain write committed.</CardDescription>
+				</CardHeader>
+				<CardBody>
+					<div class="recipeField">
+						<label for="item-save-mode">Next save behavior</label>
+						<select id="item-save-mode" class="recipeSelect" data-item-save-mode>
+							<option value="success">Save successfully</option>
+							<option value="refused">Server refuses the name</option>
+							<option value="conflict">Item changed elsewhere</option>
+							<option value="lost-response">Commit, then lose the response</option>
+							<option value="not-delivered">Request never reaches the server</option>
+							<option value="held">Hold the response until released</option>
+						</select>
+					</div>
+				</CardBody>
+			</Card>
+		</div>
+	</Container>
+</CookbookLayout>
+
+<script>
+	import { createItemWorkflow } from '../../../lib/root/item-workflow';
+
+	const app = document.querySelector('[data-item-app]');
+	if (app instanceof HTMLElement) {
+		const root = createItemWorkflow(app.dataset.accountId ?? 'astro-demo-account');
+		const picker = app.querySelector('[data-item-select]');
+		const list = app.querySelector('[data-item-list]');
+		const listStatus = app.querySelector('[data-item-list-status]');
+		const notice = app.querySelector('[data-item-notice]');
+		const form = app.querySelector('[data-item-form]');
+		const nameInput = app.querySelector('[data-item-name]');
+		const hostInput = app.querySelector('[data-item-host]');
+		const saveButton = app.querySelector('[data-item-save]');
+		const checkButton = app.querySelector('[data-item-check]');
+		const releaseButton = app.querySelector('[data-item-release]');
+		const refreshButton = app.querySelector('[data-item-refresh]');
+		const resetButton = app.querySelector('[data-item-reset]');
+		const status = app.querySelector('[data-item-status]');
+		const badge = app.querySelector('[data-item-badge]');
+		const modeSelect = app.querySelector('[data-item-save-mode]');
+		let current;
+		let baseline;
+		let draft;
+		let confirmed = null;
+		let attempt = null;
+		let collection = [];
+		let busy = false;
+
+		const signal = () => new AbortController().signal;
+		const setText = (node, value) => { if (node) node.textContent = value; };
+		const setNotice = (value, tone = '') => {
+			setText(notice, value);
+			if (notice instanceof HTMLElement) {
+				if (tone) notice.dataset.tone = tone;
+				else delete notice.dataset.tone;
+			}
+		};
+		const dirty = () => Boolean(draft && baseline && (draft.name !== baseline.name || draft.host !== baseline.host));
+		const checkpoint = () => {
+			if (!current || !baseline || !draft) return;
+			const result = root.checkpoint({ item: current, draft, baseline, confirmed, attempt });
+			if (!result.ok) setNotice(result.error.message, 'warn');
+		};
+		const setBadge = (label, tone = '') => {
+			setText(badge, label);
+			if (badge instanceof HTMLElement) {
+				if (tone) badge.dataset.tone = tone;
+				else delete badge.dataset.tone;
+			}
+		};
+		const render = () => {
+			if (!(nameInput instanceof HTMLInputElement) || !(hostInput instanceof HTMLInputElement)) return;
+			nameInput.value = draft?.name ?? '';
+			hostInput.value = draft?.host ?? '';
+			const unresolved = busy || Boolean(attempt && !confirmed);
+			const canSave = Boolean(current && dirty() && !unresolved);
+			nameInput.disabled = !current || busy;
+			hostInput.disabled = !current || busy;
+			if (saveButton instanceof HTMLButtonElement) saveButton.disabled = !canSave;
+			if (checkButton instanceof HTMLButtonElement) checkButton.disabled = busy || !attempt || Boolean(confirmed);
+			if (releaseButton instanceof HTMLElement) releaseButton.classList.toggle('recipeHidden', !root.isHolding());
+			if (refreshButton instanceof HTMLButtonElement) refreshButton.disabled = busy;
+			if (picker instanceof HTMLSelectElement) picker.disabled = busy || !current;
+			setBadge(!current ? 'Waiting' : attempt && !confirmed ? 'Needs resolution' : dirty() ? 'Unsaved changes' : confirmed ? `Revision ${current.revision}` : `Revision ${current.revision}`, attempt && !confirmed ? 'warn' : dirty() ? 'accent' : '');
+		};
+		const renderList = (items) => {
+			if (!(list instanceof HTMLElement)) return;
+			list.replaceChildren();
+			if (picker instanceof HTMLSelectElement) {
+				picker.replaceChildren();
+				for (const item of items) {
+					const option = document.createElement('option');
+					option.value = item.id;
+					option.textContent = item.name;
+					picker.append(option);
+				}
+				if (current) picker.value = current.id;
+			}
+			for (const item of items) {
+				const row = document.createElement('li');
+				const button = document.createElement('button');
+				button.type = 'button';
+				button.className = 'recipeListButton';
+				button.dataset.itemId = item.id;
+				if (current?.id === item.id) button.dataset.selected = '';
+				button.innerHTML = `<span>${item.name}</span><small class="recipeListMeta">r${item.revision ?? '—'}</small><span class="recipeListHost">${item.host}</span>`;
+				button.addEventListener('click', () => void select(item.id));
+				row.append(button);
+				list.append(row);
+			}
+		};
+		const select = async (id) => {
+			busy = true;
+			render();
+			const result = await root.detail(id, signal());
+			busy = false;
+			if (!result.ok) {
+				setText(listStatus, result.error.message);
+				setNotice('The selected item could not be loaded.', 'warn');
+				render();
+				return;
+			}
+			const saved = root.loadDraft(id);
+			if (!saved.ok) {
+				setNotice(saved.error.message, 'warn');
+				return;
+			}
+			const checkpointValue = saved.value;
+			current = checkpointValue?.item ?? result.value;
+			baseline = checkpointValue?.baseline ?? { name: result.value.name, host: result.value.host };
+			draft = checkpointValue?.draft ?? { name: result.value.name, host: result.value.host };
+			confirmed = checkpointValue?.confirmed ?? null;
+			attempt = checkpointValue?.attempt ?? null;
+			if (!checkpointValue) checkpoint();
+			setText(listStatus, `Showing ${current.name} · ${current.host}`);
+			setText(status, attempt ? 'This item has an unresolved save. Check its receipt before saving again.' : dirty() ? 'Unsaved changes are checkpointed in this tab.' : 'This draft matches the loaded item.');
+			setNotice('The item workspace is ready.');
+			renderList(collection);
+			render();
+		};
+		const refresh = async () => {
+			busy = true;
+			render();
+			const result = await root.list(signal());
+			busy = false;
+			if (!result.ok) {
+				setNotice(result.error.message, 'warn');
+				setText(listStatus, 'The collection could not be refreshed.');
+				render();
+				return;
+			}
+			collection = result.value;
+			renderList(result.value);
+			if (!current || !result.value.some((item) => item.id === current.id)) await select(result.value[0].id);
+			else {
+				setText(listStatus, `Showing ${current.name} · ${current.host}`);
+				render();
+			}
+			setNotice('The item workspace is ready.');
+		};
+		const save = async () => {
+			if (!current || !draft || !dirty() || busy || (attempt && !confirmed)) return;
+			attempt = { id: current.id, expectedRevision: current.revision, operationId: crypto.randomUUID(), draft: { ...draft } };
+			checkpoint();
+			busy = true;
+			render();
+			const result = await root.save(attempt, signal());
+			busy = false;
+			if (result.ok) {
+				confirmed = result.value;
+				current = result.value.item;
+				baseline = { name: result.value.item.name, host: result.value.item.host };
+				attempt = null;
+				checkpoint();
+				setText(status, 'Saved. The current draft matches the confirmed receipt.');
+				setNotice('Save confirmed by the simulated server.');
+				await refresh();
+				return;
+			}
+			const uncertain = result.error.kind === 'timeout' || result.error.kind === 'unavailable';
+			setText(status, uncertain ? 'Save outcome unknown. Check the original receipt before saving again.' : result.error.message);
+			setNotice(uncertain ? 'The response did not provide a final write outcome.' : 'The item was not saved.', uncertain ? 'warn' : 'danger');
+			render();
+		};
+		const check = async () => {
+			if (!attempt || busy) return;
+			busy = true;
+			setText(status, 'Checking the original save receipt. No new write is being sent.');
+			render();
+			const result = await root.find(attempt.operationId, signal());
+			busy = false;
+			if (!result.ok) {
+				setText(status, result.error.message);
+				setNotice('The receipt check failed. Keep the operation unresolved and try again.', 'warn');
+				render();
+				return;
+			}
+			if (!result.value) {
+				attempt = null;
+				checkpoint();
+				setText(status, 'No save was recorded. Your current draft is ready for another attempt.');
+				setNotice('The simulated server gave a terminal absence answer.');
+				render();
+				return;
+			}
+			confirmed = result.value;
+			current = result.value.item;
+			baseline = { name: result.value.item.name, host: result.value.item.host };
+			attempt = null;
+			checkpoint();
+			setText(status, 'Receipt confirmed. The original save committed once.');
+			setNotice('The lost response was reconciled without resending the write.');
+			await refresh();
+		};
+
+		picker?.addEventListener('change', (event) => void select(event.currentTarget.value));
+		refreshButton?.addEventListener('click', () => void refresh());
+		form?.addEventListener('submit', (event) => { event.preventDefault(); void save(); });
+		nameInput?.addEventListener('input', (event) => { draft = { ...draft, name: event.currentTarget.value }; checkpoint(); render(); });
+		hostInput?.addEventListener('input', (event) => { draft = { ...draft, host: event.currentTarget.value }; checkpoint(); render(); });
+		checkButton?.addEventListener('click', () => void check());
+		releaseButton?.addEventListener('click', () => { root.release(); setText(status, 'The held response was released.'); render(); });
+		modeSelect?.addEventListener('change', (event) => root.setSaveMode(event.currentTarget.value));
+		resetButton?.addEventListener('click', () => { root.reset(); window.location.reload(); });
+		window.addEventListener('pagehide', () => root.dispose(), { once: true });
+		void (async () => {
+			const initialized = root.initialize();
+			if (!initialized.ok) { setNotice(initialized.error.message, 'warn'); return; }
+			await refresh();
+		})();
+	}
+</script>

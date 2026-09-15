@@ -1,0 +1,52 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import '../styles/cookbook.css';
+
+interface Props {
+	title?: string;
+	description?: string;
+}
+
+const { title = 'Cookbook · flover-astro', description } = Astro.props;
+const pathname = Astro.url.pathname.replace(/\/$/, '') || '/';
+const recipes = [
+	{ href: '/cookbook/items', label: 'Items' },
+	{ href: '/cookbook/session', label: 'Session recovery' },
+	{ href: '/cookbook/resilience', label: 'Resilience' },
+	{ href: '/cookbook/access', label: 'Access' },
+	{ href: '/cookbook/jobs', label: 'Jobs' },
+	{ href: '/cookbook/activity', label: 'Activity' },
+	{ href: '/cookbook/localization', label: 'Localization' },
+	{ href: '/cookbook/chaos', label: 'Chaos' },
+	{ href: '/cookbook/diagnostics', label: 'Diagnostics' },
+	{ href: '/cookbook/failures', label: 'Failures' },
+	{ href: '/cookbook/url-state', label: 'URL state' },
+	{ href: '/cookbook/dashboard', label: 'Dashboard' },
+	{ href: '/cookbook/editable-dashboard', label: 'Editable dashboard' }
+];
+---
+
+<BaseLayout title={title} description={description}>
+	<div class="cookbookShell">
+		<a class="cookbookSkip" href="#cookbook-main">Skip to cookbook content</a>
+		<header class="cookbookHeader">
+			<div class="cookbookHeaderInner">
+				<a class="cookbookWordmark" href="/" aria-label="Flover Astro home">flover-astro</a>
+				<span class="cookbookLabel">Cookbook</span>
+				<nav class="cookbookNav" aria-label="Cookbook navigation">
+					<a href="/" class:list={['cookbookNavLink', pathname === '/' && 'cookbookNavActive']}>Home</a>
+					<a href="/kitchen-sink" class="cookbookNavLink">Kitchen sink</a>
+					<a href="/cookbook" class:list={['cookbookNavLink', pathname === '/cookbook' && 'cookbookNavActive']}>Overview</a>
+					{recipes.map((recipe) => (
+						<a
+							href={recipe.href}
+							class:list={['cookbookNavLink', pathname === recipe.href && 'cookbookNavActive']}
+							aria-current={pathname === recipe.href ? 'page' : undefined}
+						>{recipe.label}</a>
+					))}
+				</nav>
+			</div>
+		</header>
+		<main id="cookbook-main" class="cookbookMain" tabindex="-1"><slot /></main>
+	</div>
+</BaseLayout>

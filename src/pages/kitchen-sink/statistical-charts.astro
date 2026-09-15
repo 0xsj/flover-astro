@@ -1,0 +1,92 @@
+---
+import { BubblePlot, ChartFrame, ColourBar, Legend, Matrix, NothingKey, RankedBar, Volcano } from '../../components/charts';
+import { Card, CardBody, CardTitle, Panel } from '../../components/display';
+import { categorical, coverageOf } from '../../lib/charts';
+import { ASSETS, bars, bubbles, cell, CHECKS, volcano } from '../../lib/charts/fixtures';
+import Case from '../../components/kitchen-sink/Case.astro';
+import Section from '../../components/kitchen-sink/Section.astro';
+import Text from '../../components/typography/Text.astro';
+import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
+import volcanoSource from '../../components/charts/Volcano.astro?raw';
+import bubbleSource from '../../components/charts/BubblePlot.astro?raw';
+import rankedBarSource from '../../components/charts/RankedBar.astro?raw';
+import matrixSource from '../../components/charts/Matrix.astro?raw';
+import legendSource from '../../components/charts/Legend.astro?raw';
+import colourBarSource from '../../components/charts/ColourBar.astro?raw';
+
+const coverage = coverageOf(ASSETS, CHECKS, cell);
+const categoryLegend = [
+	{ label: 'KEGG', fill: categorical(0) },
+	{ label: 'Reactome', fill: categorical(1) },
+	{ label: 'GO', fill: categorical(2) }
+];
+---
+
+<KitchenSinkLayout title="Statistical charts · flover-astro" description="Shared axes and absence-aware statistical chart marks.">
+	<Section
+		id="statistical-charts"
+		title="Statistical charts"
+		blurb="The statistical family from Overwatch: shared axes and encodings, specialized marks, and a coverage matrix that keeps different kinds of absence distinct. All examples use illustrative data."
+	>
+		<Case title="Volcano" note="effect against significance; three states and grey is one of them" source={['src/components/charts/Volcano.astro', 'src/components/charts/PlotFrame.astro']}>
+			<Volcano points={volcano} labelled={['g3', 'g17', 'g44']} title="Differential expression" />
+			<pre slot="source" class="code"><code>{volcanoSource}</code></pre>
+		</Case>
+
+		<Case title="Bubble plot" note="area is the third variable, and it is AREA not radius" source={['src/components/charts/BubblePlot.astro', 'src/lib/charts/encode.ts']}>
+			<BubblePlot bubbles={bubbles} xLabel="enrichment" yLabel="−log₁₀ q" categories={['KEGG', 'Reactome', 'GO']} />
+			<Legend items={categoryLegend} />
+			<pre slot="source" class="code"><code>{bubbleSource}</code></pre>
+		</Case>
+
+		<Case title="Ranked bar" note="sorted by the component, because the order is the finding" source={['src/components/charts/RankedBar.astro', 'src/components/charts/PlotFrame.astro']}>
+			<RankedBar bars={bars} yLabel="degree" />
+			<pre slot="source" class="code"><code>{rankedBarSource}</code></pre>
+		</Case>
+
+		<Case title="Matrix" note="the one with a caller — three kinds of nothing, and `n/a` is excluded from the ratio" source={['src/components/charts/Matrix.astro', 'src/lib/charts/encode.ts']}>
+			<Matrix rows={ASSETS} columns={CHECKS} {cell} ramp="sequential" title="Coverage" />
+			<NothingKey />
+			<div class="row"><Text as="span" size="sm" tone="quiet">{coverage ? `${coverage.checked} of ${coverage.applicable} applicable · ${(coverage.ratio * 100).toFixed(0)}%` : '— nothing applicable'} — the n/a cells are in neither half of that fraction.</Text></div>
+			<pre slot="source" class="code"><code>{matrixSource}</code></pre>
+		</Case>
+
+		<Case title="Colour bar" note="stepped scale with a labelled range and midpoint" source={['src/components/charts/ColourBar.astro', 'src/components/charts/Legend.astro']}>
+			<div class="row"><span class="rowLabel">sequential</span><ColourBar kind="sequential" domain={[0, 100]} label="coverage %" /></div>
+			<div class="row"><span class="rowLabel">diverging</span><ColourBar kind="diverging" domain={[-1, 1]} label="correlation" /></div>
+			<pre slot="source" class="code"><code>{`${colourBarSource}\n\n${legendSource}`}</code></pre>
+		</Case>
+
+		<Case title="Matrix selection" note="inspect a cell with a pointer, Enter, Space, or its data table">
+			<div data-matrix-selection>
+				<Matrix rows={ASSETS.slice(0, 4)} columns={CHECKS.slice(0, 4)} {cell} title="Selectable coverage" selectable width={520} />
+				<Text size="sm" tone="muted" data-matrix-selection-status>Select a cell to inspect its exact state.</Text>
+			</div>
+		</Case>
+
+		<Case title="Empty plots" note="an empty input has an explicit answer">
+			<Volcano points={[]} /><BubblePlot bubbles={[]} /><RankedBar bars={[]} /><Matrix rows={[]} columns={[]} cell={() => ({ state: 'na' })} />
+		</Case>
+
+		<Case title="Unavailable measurements" note="invalid readings retain their records without becoming zeros or marks">
+			<div class="chartExamplesGrid">
+				<Panel title="Volcano"><Volcano title="Unavailable effects" points={[{ id: 'effect', x: NaN, y: 2 }]} /></Panel>
+				<Panel title="Bubble"><BubblePlot title="Unavailable weights" bubbles={[{ id: 'weight', x: 1, y: 2, weight: -1 }]} /></Panel>
+				<Panel title="Ranked bar"><RankedBar title="Unavailable totals" bars={[{ id: 'total', label: 'Total', value: Infinity }]} /></Panel>
+				<Panel title="Matrix"><Matrix title="Unavailable coverage" rows={['Atlas']} columns={['Checks']} cell={() => ({ state: 'value', value: Number.NaN })} width={320} height={180} /></Panel>
+			</div>
+		</Case>
+
+		<Card><CardBody><CardTitle level={2}>Related chart batch</CardTitle><p class="limits">The deterministic graph/network layer is cataloged separately: graph frames, seeded layouts, presets, semantic edges, hulls, and keyboard selection.</p></CardBody></Card>
+	</Section>
+</KitchenSinkLayout>
+
+<script>
+	const selection = document.querySelector('[data-matrix-selection]');
+	const status = selection?.querySelector('[data-matrix-selection-status]');
+	selection?.addEventListener('astro-matrix-select', (event) => {
+		if (!(status instanceof HTMLElement)) return;
+		const detail = event.detail;
+		status.textContent = detail ? `Selected ${detail.row} · ${detail.column}. Open the data table for the full matrix.` : 'Cell selected.';
+	});
+</script>

@@ -1,0 +1,101 @@
+@layer primitive {
+	.chartFrame { display: grid; gap: var(--space-6); min-inline-size: 0; margin: 0; }
+	.chartHeader { display: flex; align-items: start; justify-content: space-between; flex-wrap: wrap; gap: var(--space-5); }
+	.chartTitle { color: var(--ink); font-size: var(--text-15); font-weight: var(--weight-strong); }
+	.chartDescription, .chartFooter { color: var(--ink-3); font-size: var(--text-11-5); line-height: var(--leading-body); }
+	.chartDescription { margin-block-start: var(--space-2); }
+	.chartActions { display: flex; align-items: center; gap: var(--space-3); }
+	.chartPlot { min-inline-size: 0; }
+	.chartFooter { padding-block-start: var(--space-4); border-block-start: 1px solid var(--line); }
+	.chartLegend { display: flex; gap: var(--space-6); flex-wrap: wrap; margin: 0; padding: 0; list-style: none; }
+	.chartSeries { display: inline-flex; align-items: center; gap: var(--space-3); }
+	.chartSeriesAccent { color: var(--accent); }
+	.chartSeriesInfo { color: var(--info); }
+	.chartSeriesWarn { color: var(--warn); }
+	.chartSeriesNeutral { color: var(--ink-3); }
+	.chartSeriesSolid { stroke-dasharray: none; }
+	.chartSeriesDashed { stroke-dasharray: 7 4; }
+	.chartSeriesDotted { stroke-dasharray: 2 4; }
+	.chartLegendLabel { color: var(--ink-2); font-size: var(--text-11-5); }
+	.chartStroke { stroke: currentColor; stroke-width: 2; }
+	.chartBars { min-inline-size: 0; }
+	.chartBarList { display: grid; gap: var(--space-5); margin: 0; padding: 0; list-style: none; }
+	.chartBarRow { display: grid; grid-template-columns: minmax(70px, 1fr) minmax(40px, 3fr) minmax(60px, auto); align-items: center; gap: var(--space-5); font-size: var(--text-12); }
+	.chartBarLabel { color: var(--ink-2); overflow-wrap: anywhere; }
+	.chartBarTrack { block-size: 12px; overflow: hidden; border-radius: var(--radius-1); background: var(--surface-hover); }
+	.chartBarFill { display: block; block-size: 100%; border-radius: inherit; background: currentColor; }
+	.chartBarValue { color: var(--ink-2); font-size: var(--text-11); font-variant-numeric: tabular-nums; text-align: end; }
+	.chartLine { min-inline-size: 0; }
+	.chartViewport { overflow-x: auto; }
+	.chartSvg { display: block; inline-size: 100%; min-inline-size: 480px; max-inline-size: 720px; block-size: auto; margin-inline: auto; }
+	.chartAxis { color: var(--ink-3); fill: currentColor; font-family: var(--font-mono); font-size: 14px; font-variant-numeric: tabular-nums; }
+	.chartGridLine { stroke: var(--chart-grid); }
+	.chartZeroLine { stroke: var(--chart-axis); stroke-dasharray: 3 3; }
+	.chartData { margin-block-start: var(--space-5); color: var(--ink-3); font-size: var(--text-11-5); }
+	.chartData > summary { inline-size: fit-content; padding-block: var(--space-3); cursor: pointer; }
+	.chartData[open] > summary { margin-block-end: var(--space-4); }
+	.chartDataTable { overflow-x: auto; }
+	.chartData .displayTable { min-inline-size: 520px; }
+	.chartEmpty { padding: var(--space-7); color: var(--ink-3); font-size: var(--text-13); text-align: center; }
+	.chartPeriodPanel[hidden] { display: none; }
+	.chartExamplesGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: var(--space-7); }
+	.chartPeriodPanel { min-inline-size: 0; }
+	.plotViewport, .matrixViewport { max-inline-size: 100%; overflow: auto; }
+	.plotFrame { display: block; max-inline-size: none; block-size: auto; }
+	.plotGrid { stroke: var(--chart-grid); }
+	.plotRule { stroke: var(--chart-axis); stroke-dasharray: 3 3; }
+	.plotAxis { stroke: var(--chart-axis); }
+	.plotTick, .plotAxisLabel { fill: var(--chart-label); font-family: var(--font-mono); font-size: 11px; font-variant-numeric: tabular-nums; }
+	.plotAxisLabel { font-size: 12px; }
+	.chartPoint { fill: var(--chart-neutral); transition: r var(--dur-1); }
+	.chartPoint[data-state='up'] { fill: var(--chart-pos); }
+	.chartPoint[data-state='down'] { fill: var(--chart-neg); }
+	.chartPointLabel { fill: var(--chart-ink); font-family: var(--font-mono); font-size: 11px; }
+	.chartBubble { fill-opacity: .55; stroke: var(--surface-panel); stroke-width: 1.5; }
+	.chartRankedBar { fill: var(--chart-1); }
+	.chartBarValueText, .chartBarLabelText { fill: var(--chart-label); font-family: var(--font-mono); font-size: 11px; font-variant-numeric: tabular-nums; }
+	.chartMarkMessage { padding: var(--space-7); color: var(--ink-3); font-size: var(--text-13); text-align: center; }
+	.chartCategoryLegend, .chartNothingKey { display: flex; align-items: center; gap: var(--space-3) var(--space-5); flex-wrap: wrap; margin: var(--space-4) 0 0; padding: 0; color: var(--chart-label); font-size: var(--text-11-5); list-style: none; }
+	.chartCategoryLegend li, .chartNothingKey li { display: inline-flex; align-items: center; gap: var(--space-2); }
+	.chartCategorySwatch { inline-size: 16px; block-size: 16px; }
+	.chartColourBar { display: grid; gap: var(--space-1); justify-items: start; margin-block: var(--space-4) 0; }
+	.chartColourBar svg { block-size: auto; }
+	.chartColourTick { fill: var(--chart-label); font-family: var(--font-mono); font-size: 11px; font-variant-numeric: tabular-nums; }
+	.chartColourBar figcaption { color: var(--chart-label); font-size: var(--text-11); }
+	.chartNothingAbsent, .chartNothingUnattempted, .chartNothingNa { inline-size: 11px; block-size: 11px; border-radius: 2px; }
+	.chartNothingAbsent { background: var(--chart-absent); }
+	.chartNothingUnattempted { border: 1px dashed var(--ink-4); }
+	.chartNothingNa { background: var(--chart-na); background-image: linear-gradient(45deg, transparent 45%, var(--chart-grid) 45%, var(--chart-grid) 55%, transparent 55%); }
+	.matrixViewport { max-inline-size: 100%; }
+	.chartMatrix { display: block; max-inline-size: none; block-size: auto; overflow: visible; }
+	.matrixCell { fill: var(--chart-mid); }
+	.matrixCell[role='button'] { cursor: pointer; }
+	.matrixCell:focus-visible { outline: none; stroke: var(--accent); stroke-width: 3; }
+	.matrixCellUnavailable { fill: none; stroke: var(--ink-3); stroke-dasharray: 2 2; }
+	.matrixCellAbsent { fill: var(--chart-absent); }
+	.matrixCellUnattempted { fill: var(--chart-unattempted); }
+	.matrixCellNa { fill: var(--chart-na); }
+	.matrixUnattempted { fill: none; stroke: var(--ink-4); stroke-width: 1; stroke-dasharray: 2 2; pointer-events: none; }
+	.matrixNa { stroke: var(--ink-4); stroke-width: 1; pointer-events: none; }
+	.matrixLabel { fill: var(--chart-label); font-family: var(--font-mono); font-size: 11px; }
+	.chartMatrixTableButton { padding: 0; border: 0; background: transparent; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
+	.graphViewport { max-inline-size: 100%; overflow: auto; padding: var(--space-3); }
+	.graphFrame { display: block; max-inline-size: none; block-size: auto; overflow: visible; }
+	.graphEdge { fill: none; stroke: var(--line-heavy); stroke-width: 1; transition: opacity var(--dur-1), stroke-width var(--dur-1); }
+	.graphEdge[data-kind='derivation'], .graphEdge[data-kind='dashed'] { stroke-dasharray: 7 4; }
+	.graphEdge[data-faded] { opacity: .1; }
+	.graphNode { transition: opacity var(--dur-1); }
+	.graphNode[role='button'] { cursor: pointer; outline: none; }
+	.graphNode[data-mark='near'] { opacity: .92; }
+	.graphNode[data-mark='dim'] { opacity: .22; }
+	.graphNode:focus-visible .graphMark { stroke: var(--accent); stroke-width: 2.5; }
+	.graphNode[data-selected='true'] .graphMark { stroke: var(--accent); stroke-width: 2.5; }
+	.graphMark { fill: var(--chart-1); stroke: var(--surface-panel); stroke-width: 1.5; paint-order: stroke fill; transition: stroke var(--dur-1), stroke-width var(--dur-1); }
+	.graphLabel { fill: var(--chart-label); font-family: var(--font-mono); font-size: 11px; }
+	.graphHull { fill: var(--chart-1); opacity: .07; stroke: none; pointer-events: none; }
+	.graphHullLabel { fill: var(--chart-label); font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; pointer-events: none; }
+	.chartGraphTableButton { padding: 0; border: 0; background: transparent; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
+	@media (max-width: 620px) {
+		.chartBarRow { grid-template-columns: minmax(64px, 1fr) minmax(40px, 2fr) minmax(50px, auto); gap: var(--space-3); }
+	}
+}

@@ -1,0 +1,63 @@
+---
+import { Card, CardDescription, CardHeader, CardLink, CardTitle } from '../../components/display';
+import { Button } from '../../components/forms';
+import Container from '../../components/layout/Container.astro';
+import Flex from '../../components/layout/Flex.astro';
+import PageHeader from '../../components/patterns/PageHeader.astro';
+import Text from '../../components/typography/Text.astro';
+import CookbookLayout from '../../layouts/CookbookLayout.astro';
+
+const recipes = [
+	{ href: '/cookbook/items', label: 'From a list to a saved change', category: 'Workflow', icon: '01', description: 'Browse durable fixture data, edit an item, checkpoint the draft, and reconcile a save whose response disappeared.' },
+	{ href: '/cookbook/session', label: 'Pick up where you left off', category: 'Identity', icon: '02', description: 'Expire a session while editing or saving. Verify the account before allowing a recovery action.' },
+	{ href: '/cookbook/resilience', label: 'Build for the unexpected', category: 'Resilience', icon: '03', description: 'Break a response, change the order, or interrupt a save while keeping every outcome meaningful.' },
+	{ href: '/cookbook/access', label: 'Access can change while you work', category: 'Authorization', icon: '04', description: 'Read explicit capability decisions, invalidate stale grants, and handle a server refusal at the affected region.' },
+	{ href: '/cookbook/jobs', label: 'Follow work that outlives a request', category: 'Operations', icon: '05', description: 'Observe a long-running import or export, reconnect to its latest revision, and request cancellation honestly.' },
+	{ href: '/cookbook/activity', label: 'Keep an append-only activity trail', category: 'Audit', icon: '06', description: 'Cursor-page a real fixture ledger, filter by facet or interaction, and keep empty distinct from refused.' },
+	{ href: '/cookbook/localization', label: 'Make room for another language', category: 'Presentation', icon: '07', description: 'Exercise language, direction, time zone, currency, long copy, and unavailable source values together.' },
+	{ href: '/cookbook/chaos', label: 'Break the application on purpose', category: 'Resilience', icon: '08', description: 'Build a real query plan that wraps the composition root, then follow it into a server-backed surface.' },
+	{ href: '/cookbook/diagnostics', label: 'Follow an interaction', category: 'Observability', icon: '09', description: 'Record request, decode, recovery, and cancellation spans without allowing instrumentation to change the result.' },
+	{ href: '/cookbook/failures', label: 'Name every failure honestly', category: 'Kernel', icon: '10', description: 'Force each failure kind through the transport boundary and inspect its retry, cause, and caller obligations.' },
+	{ href: '/cookbook/url-state', label: 'Make the view shareable', category: 'Navigation', icon: '11', description: 'Search, filter, sort, paginate, and switch views while the address remains the committed state.' },
+	{ href: '/cookbook/dashboard', label: 'See the account dashboard', category: 'Workspace', icon: '12', description: 'Read the server-side session surface, preserve presence states, and reconcile browser-side session actions.' },
+	{ href: '/cookbook/editable-dashboard', label: 'Arrange the dashboard', category: 'Workspace', icon: '13', description: 'Persist a validated widget layout, edit it with keyboard or pointer controls, and detect changes from another tab.' }
+];
+---
+
+<CookbookLayout description="Working examples for the flover-astro architecture.">
+	<Container width="page">
+		<Flex direction="column" gap={9}>
+			<PageHeader
+				title="Cookbook"
+				description="Working examples for your next application. Explore a complete flow, then bring the pieces you need into your own workspace."
+			>
+				<Button slot="actions" href="/kitchen-sink" intent="secondary">Browse components</Button>
+			</PageHeader>
+
+			<Card>
+				<CardHeader>
+					<CardTitle level={2}><CardLink href="/kitchen-sink">Start with the foundation</CardLink></CardTitle>
+					<CardDescription>The Astro port keeps the service contracts and state machines framework-free, then adds browser behavior through explicit native scripts. These recipes are isolated demonstrations, not application-wide fixture state.</CardDescription>
+				</CardHeader>
+			</Card>
+
+			<div class="cookbookGrid">
+				{recipes.map((recipe) => (
+					<Card>
+						<CardHeader>
+							<span slot="leading" class="recipeCardLeading" aria-hidden="true">{recipe.icon}</span>
+							<Text as="span" size="sm" tone="muted">{recipe.category}</Text>
+							<CardTitle level={2}><CardLink href={recipe.href}>{recipe.label}</CardLink></CardTitle>
+							<CardDescription>{recipe.description}</CardDescription>
+						</CardHeader>
+					</Card>
+				))}
+			</div>
+
+			<div class="cookbookFooter">
+				<Text size="sm" tone="muted">The first Astro batch uses an isolated demo account until the auth UI boundary is ported.</Text>
+				<Text size="sm"><a href="/kitchen-sink">Browse individual components</a></Text>
+			</div>
+		</Flex>
+	</Container>
+</CookbookLayout>

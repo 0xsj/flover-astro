@@ -1,0 +1,222 @@
+---
+import '../../styles/charts.css';
+import ChartData from './ChartData.astro';
+import type { GraphEdge, GraphFrameProps, GraphNode, Point } from '../../lib/charts';
+import { circular, columns, concentric, force, grid, px, shapePath, tiered } from '../../lib/charts';
+
+const {
+	nodes,
+	edges,
+	width,
+	height,
+	layout = 'force',
+	rootId,
+	groupOrder,
+	pins,
+	curved = false,
+	labels = true,
+	hulls = [],
+	selectable = false,
+	selected = null,
+	title = 'Network diagram',
+	class: className,
+	...rest
+}: GraphFrameProps = Astro.props;
+
+const nodeById = new Map(nodes.map((node) => [node.id, node]));
+const visibleEdges = edges.filter((edge) => nodeById.has(edge.from) && nodeById.has(edge.to));
+const input = { nodes, edges, width, height, pins };
+const placement = (() => {
+	switch (layout) {
+		case 'concentric':
+			return concentric(input, rootId && nodeById.has(rootId) ? rootId : nodes[0]?.id ?? '');
+		case 'circular':
+			return circular(input);
+		case 'tiered':
+			return tiered(input, groupOrder);
+		case 'columns':
+			return columns(input);
+		case 'grid':
+			return grid(input);
+		case 'force':
+		default:
+			return force(input);
+	}
+})();
+
+const edgePath = (from: Point, to: Point): string => {
+	if (!curved) return `M ${px(from.x)} ${px(from.y)} L ${px(to.x)} ${px(to.y)}`;
+	const dx = to.x - from.x;
+	const dy = to.y - from.y;
+	const distance = Math.sqrt(dx * dx + dy * dy) || 1;
+	const bow = Math.min(distance * 0.18, 46);
+	const middleX = (from.x + to.x) / 2 - (dy / distance) * bow;
+	const middleY = (from.y + to.y) / 2 + (dx / distance) * bow;
+	return `M ${px(from.x)} ${px(from.y)} Q ${px(middleX)} ${px(middleY)} ${px(to.x)} ${px(to.y)}`;
+};
+
+const hullGeometry = hulls.map((hull) => {
+	const points = hull.ids.map((id) => placement.get(id)).filter((point): point is Point => Boolean(point));
+	if (!points.length) return { ...hull, points, cx: 0, cy: 0, radius: 0 };
+	const cx = points.reduce((sum, point) => sum + point.x, 0) / points.length;
+	const cy = points.reduce((sum, point) => sum + point.y, 0) / points.length;
+	const radius = Math.max(28, ...points.map((point) => Math.sqrt((point.x - cx) ** 2 + (point.y - cy) ** 2))) + 22;
+	return { ...hull, points, cx, cy, radius };
+});
+
+const bounds = (() => {
+	let left = 0;
+	let top = 0;
+	let right = width;
+	let bottom = height;
+	for (const node of nodes) {
+		const point = placement.get(node.id);
+		if (!point) continue;
+		left = Math.min(left, point.x - 40);
+		right = Math.max(right, point.x + 40);
+		top = Math.min(top, point.y - 20);
+		bottom = Math.max(bottom, point.y + 30);
+	}
+	for (const hull of hullGeometry) {
+		if (!hull.points.length) continue;
+		left = Math.min(left, hull.cx - hull.radius * 1.15);
+		right = Math.max(right, hull.cx + hull.radius * 1.15);
+		top = Math.min(top, hull.cy - hull.radius - 22);
+		bottom = Math.max(bottom, hull.cy + hull.radius);
+	}
+	return { left, top, right, bottom };
+})();
+
+const initialSelected = selected && nodeById.has(selected) ? selected : null;
+const labelFor = (node: GraphNode) => node.label ?? node.id;
+const radiusFor = (node: GraphNode) => Number.isFinite(node.size) ? Math.max(3, node.size ?? 6) : 6;
+const fillFor = (node: GraphNode) => node.fill ?? undefined;
+const shapeFor = (node: GraphNode) => node.shape ?? 'circle';
+---
+
+<div {...rest} class:list={['graphViewport', className]} data-astro-graph data-selected-id={initialSelected ?? undefined}>
+	{nodes.length ? (
+		<svg
+			viewBox={`${px(bounds.left)} ${px(bounds.top)} ${px(bounds.right - bounds.left)} ${px(bounds.bottom - bounds.top)}`}
+			width={px(bounds.right - bounds.left)}
+			height={px(bounds.bottom - bounds.top)}
+			class="graphFrame"
+			role={selectable ? 'group' : 'img'}
+			aria-label={title}
+			data-graph-canvas
+		>
+			<title>{title}</title>
+			{hullGeometry.map((hull) => hull.points.length ? (
+				<g>
+					<ellipse class="graphHull" cx={px(hull.cx)} cy={px(hull.cy)} rx={px(hull.radius * 1.15)} ry={px(hull.radius)} style={hull.fill ? `fill:${hull.fill}` : undefined}></ellipse>
+					{hull.label && <text class="graphHullLabel" x={px(hull.cx)} y={px(hull.cy - hull.radius - 5)} text-anchor="middle">{hull.label}</text>}
+				</g>
+			) : null)}
+			<g class="graphEdges">
+				{visibleEdges.map((edge) => {
+					const from = placement.get(edge.from);
+					const to = placement.get(edge.to);
+					if (!from || !to) return null;
+					const sign = edge.signed === undefined ? undefined : edge.signed < 0 ? 'negative' : 'positive';
+					const stroke = edge.signed === undefined ? undefined : edge.signed >= 0 ? 'var(--chart-pos)' : 'var(--chart-neg)';
+					const opacity = edge.signed === undefined ? undefined : 0.25 + Math.min(1, Math.abs(edge.signed)) * 0.6;
+					return <path class="graphEdge" d={edgePath(from, to)} data-graph-edge data-from={edge.from} data-to={edge.to} data-kind={edge.kind || undefined} data-sign={sign} style={`stroke-width:${edge.width ?? 1};${stroke ? `stroke:${stroke};` : ''}${opacity === undefined ? '' : `stroke-opacity:${opacity};`}`}></path>;
+				})}
+			</g>
+			<g class="graphNodes">
+				{nodes.map((node) => {
+					const point = placement.get(node.id);
+					if (!point) return null;
+					const label = labelFor(node);
+					const radius = radiusFor(node);
+					return <g
+						class="graphNode"
+						transform={`translate(${px(point.x)} ${px(point.y)})`}
+						data-graph-node={selectable ? '' : undefined}
+						data-id={selectable ? node.id : undefined}
+						data-selected={initialSelected === node.id ? 'true' : undefined}
+						role={selectable ? 'button' : undefined}
+						tabindex={selectable ? 0 : undefined}
+						aria-label={selectable ? label : undefined}
+						aria-pressed={selectable ? initialSelected === node.id : undefined}
+					>
+						<path class="graphMark" d={shapePath(shapeFor(node), radius)} style={fillFor(node) ? `fill:${fillFor(node)}` : undefined}></path>
+						{labels && node.label && <text class="graphLabel" y={radius + 11} text-anchor="middle">{node.label}</text>}
+					</g>;
+				})}
+			</g>
+		</svg>
+	) : <p class="chartMarkMessage">No nodes to display.</p>}
+
+	<ChartData title={`${title} nodes`}>
+		<table class="displayTable">
+			<caption class="displayTableCaption">{title} nodes</caption>
+			<thead class="displayTableHead"><tr class="displayTableRow"><th class="displayTableTh">Node</th><th class="displayTableTh">Group</th>{selectable && <th class="displayTableTh">Selection</th>}</tr></thead>
+			<tbody>{nodes.map((node) => <tr class="displayTableRow"><th scope="row" class="displayTableTh">{labelFor(node)}</th><td class="displayTableTd">{node.group ?? 'Ungrouped'}</td>{selectable && <td class="displayTableTd"><button class="chartGraphTableButton" type="button" data-graph-table-id={node.id}>{initialSelected === node.id ? 'Selected' : 'Select'}</button></td>}</tr>)}</tbody>
+		</table>
+	</ChartData>
+	<ChartData title={`${title} connections`}>
+		<table class="displayTable">
+			<caption class="displayTableCaption">{title} connections</caption>
+			<thead class="displayTableHead"><tr class="displayTableRow"><th class="displayTableTh">From</th><th class="displayTableTh">To</th><th class="displayTableTh">Kind</th><th class="displayTableTh displayTableNumeric">Value</th></tr></thead>
+			<tbody>{visibleEdges.map((edge) => <tr class="displayTableRow"><th scope="row" class="displayTableTh">{nodeById.get(edge.from)?.label ?? edge.from}</th><td class="displayTableTd">{nodeById.get(edge.to)?.label ?? edge.to}</td><td class="displayTableTd">{edge.label ?? edge.kind ?? 'Connection'}</td><td class="displayTableTd displayTableNumeric">{edge.signed === undefined ? 'Unweighted' : String(edge.signed)}</td></tr>)}</tbody>
+		</table>
+	</ChartData>
+</div>
+
+<script>
+	const graphRoots = document.querySelectorAll('[data-astro-graph]');
+	graphRoots.forEach((root) => {
+		if (!(root instanceof HTMLElement) || root.dataset.graphBound) return;
+		root.dataset.graphBound = 'true';
+		const nodes = [...root.querySelectorAll('[data-graph-node]')];
+		const edges = [...root.querySelectorAll('[data-graph-edge]')];
+		const tableButtons = [...root.querySelectorAll('[data-graph-table-id]')];
+		let selectedId = root.dataset.selectedId || null;
+		let hoveredId = null;
+		const mark = (id) => {
+			const litId = id || selectedId;
+			const near = new Set(litId ? [litId] : []);
+			edges.forEach((edge) => {
+				const from = edge.getAttribute('data-from');
+				const to = edge.getAttribute('data-to');
+				if (from === litId) near.add(to);
+				if (to === litId) near.add(from);
+				edge.toggleAttribute('data-faded', Boolean(litId && from !== litId && to !== litId));
+			});
+			nodes.forEach((node) => {
+				const nodeId = node.getAttribute('data-id');
+				node.dataset.mark = litId ? (nodeId === litId ? 'lit' : near.has(nodeId) ? 'near' : 'dim') : '';
+				node.dataset.selected = selectedId === nodeId ? 'true' : 'false';
+				node.setAttribute('aria-pressed', String(selectedId === nodeId));
+			});
+			tableButtons.forEach((button) => {
+				const active = button.getAttribute('data-graph-table-id') === selectedId;
+				button.textContent = active ? 'Selected' : 'Select';
+			});
+		};
+		const choose = (id) => {
+			selectedId = selectedId === id ? null : id;
+			root.dataset.selectedId = selectedId || '';
+			mark(hoveredId);
+			root.dispatchEvent(new CustomEvent('astro-graph-select', { bubbles: true, detail: { id: selectedId } }));
+		};
+		nodes.forEach((node) => {
+			const id = node.getAttribute('data-id');
+			if (!id) return;
+			node.addEventListener('pointerenter', () => { hoveredId = id; mark(hoveredId); });
+			node.addEventListener('pointerleave', () => { hoveredId = null; mark(null); });
+			node.addEventListener('focus', () => { hoveredId = id; mark(hoveredId); });
+			node.addEventListener('blur', () => { hoveredId = null; mark(null); });
+			node.addEventListener('click', () => choose(id));
+			node.addEventListener('keydown', (event) => {
+				if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); choose(id); }
+			});
+		});
+		tableButtons.forEach((button) => button.addEventListener('click', () => {
+			const id = button.getAttribute('data-graph-table-id');
+			if (id) choose(id);
+		}));
+		mark(null);
+	});
+</script>

@@ -1,0 +1,148 @@
+---
+import { Card, CardBody, CardDescription, CardHeader, CardTitle } from '../../../components/display';
+import { Button } from '../../../components/forms';
+import Container from '../../../components/layout/Container.astro';
+import PageHeader from '../../../components/patterns/PageHeader.astro';
+import Text from '../../../components/typography/Text.astro';
+import CookbookLayout from '../../../layouts/CookbookLayout.astro';
+import '../../../styles/cookbook.css';
+---
+
+<CookbookLayout
+	title="URL state · Cookbook · flover-astro"
+	description="Search, filter, sort, paginate, and switch views while the address remains the committed state."
+>
+	<Container width="page">
+		<PageHeader
+			title="Make the view shareable"
+			description="Search, filter, sort, and switch views. The address holds the committed state, so a shared link and the back button bring you to the same place."
+		>
+			<Button slot="actions" href="/cookbook" intent="secondary">All recipes</Button>
+		</PageHeader>
+
+		<div class="recipeStack" data-url-app>
+			<div class="recipeNotice">The address is the saved view. Submit a search or change a control, then try refreshing or using the browser’s back and forward buttons.</div>
+			<div class="recipeNotice" data-url-issues data-tone="warn" hidden><strong>Some URL values could not be used.</strong> <span data-url-issues-list></span> <button type="button" class="recipeInlineButton" data-url-canonical>Use valid URL values</button></div>
+
+			<Card>
+				<CardHeader>
+					<span slot="actions" class="recipeFormActions"><Button size="sm" data-url-copy>Copy view link</Button><Button size="sm" data-url-reset>Reset view</Button></span>
+					<CardTitle level={2}>Projects</CardTitle>
+					<CardDescription>Search by project or team. Filter and sort changes return to page one.</CardDescription>
+				</CardHeader>
+				<CardBody>
+					<div class="recipeStack recipeStackTight">
+						<div class="recipeToolbar">
+							<form class="recipeFormActions" data-url-search-form><div class="recipeField"><label for="url-search">Search projects</label><input id="url-search" class="recipeSelect" name="q" data-url-search-input maxlength="80" placeholder="Project or team" /></div><Button type="submit">Search</Button></form>
+							<div class="recipeField"><label for="url-status">Project status</label><select id="url-status" class="recipeSelect" data-url-status><option value="all">All statuses</option><option value="active">Active</option><option value="paused">Paused</option><option value="archived">Archived</option></select></div>
+							<div class="recipeField"><label for="url-sort">Sort projects</label><select id="url-sort" class="recipeSelect" data-url-sort><option value="name">Name</option><option value="recent">Recently updated</option></select></div>
+							<div class="recipeField"><label for="url-view">Project view</label><select id="url-view" class="recipeSelect" data-url-view><option value="table">Table</option><option value="cards">Cards</option></select></div>
+						</div>
+						<Text size="sm" tone="muted" role="status" aria-atomic="true" data-url-notice>Reading the view from its address…</Text>
+						<div data-url-table hidden><div class="recipeTableScroll"><table class="displayTable"><caption class="displayTableCaption">Projects matching this view</caption><thead class="displayTableHead"><tr><th class="displayTableTh" scope="col">Project</th><th class="displayTableTh" scope="col">Team</th><th class="displayTableTh" scope="col">Status</th><th class="displayTableTh" scope="col">Updated</th></tr></thead><tbody data-url-table-rows></tbody></table></div></div>
+						<div data-url-cards class="recipeDemoGrid" hidden></div>
+						<div class="displayEmpty" data-url-empty hidden><p class="displayEmptyTitle" data-url-empty-title>No matching projects</p><p class="displayEmptyBody" data-url-empty-body>Try another search or remove the status filter.</p><div class="displayEmptyAction"><Button size="sm" data-url-empty-action>Show all projects</Button></div></div>
+						<nav class="pagination" data-url-pagination aria-label="Project pages"></nav>
+					</div>
+				</CardBody>
+			</Card>
+
+			<Card>
+				<CardHeader><CardTitle level={2}>Current view address</CardTitle><CardDescription>Defaults are omitted when writing. Unrelated query parameters and the address fragment are preserved.</CardDescription></CardHeader>
+				<CardBody><Text size="sm" class="recipeAddress" data-url-path></Text><Text size="sm" role="status" data-url-feedback tone="muted">Use Copy view link to share the full address, including any fragment.</Text></CardBody>
+			</Card>
+
+			<Text size="sm" tone="muted">The page does not fetch a collection. It demonstrates the route-local contract: parse a bounded state, keep invalid values visible, write only committed changes, and let the address remain the source of truth for reloads and history.</Text>
+		</div>
+	</Container>
+</CookbookLayout>
+
+<script>
+	import { createUrlState } from '../../../lib/runtime/url-state';
+	import { collectionQuery, PAGE_SIZE, selectProjects } from '../../../lib/cookbook/collection';
+
+	const app = document.querySelector('[data-url-app]');
+	if (app instanceof HTMLElement) {
+		const url = createUrlState(collectionQuery);
+		let feedback;
+		const text = (selector, value) => { const node = app.querySelector(selector); if (node) node.textContent = value; };
+		const hidden = (selector, value) => { const node = app.querySelector(selector); if (node instanceof HTMLElement) node.hidden = value; };
+		const setValue = (selector, value) => { const node = app.querySelector(selector); if (node instanceof HTMLInputElement || node instanceof HTMLSelectElement) node.value = value; };
+		const statusBadge = (status) => { const span = document.createElement('span'); span.className = `badge ${status === 'active' ? 'badgeAccent' : 'badgeNeutral'}`; span.textContent = status; return span; };
+		const currentPageHref = (state, page) => {
+			const written = collectionQuery.write({ ...state, page }, window.location.search);
+			if (!written.ok) return `?page=${page}`;
+			const query = written.value.toString();
+			return `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`;
+		};
+		const renderPagination = (state, totalPages, outside) => {
+			const host = app.querySelector('[data-url-pagination]');
+			if (!(host instanceof HTMLElement)) return;
+			host.replaceChildren();
+			if (outside || totalPages <= 1) return;
+			const addLink = (label, page, className, ariaLabel) => {
+				const link = document.createElement('a'); link.className = className; link.href = currentPageHref(state, page); link.textContent = label; if (ariaLabel) link.setAttribute('aria-label', ariaLabel);
+				link.addEventListener('click', (event) => { event.preventDefault(); update((current) => ({ ...current, page })); }); host.append(link);
+			};
+			if (state.page > 1) addLink('‹Previous', state.page - 1, 'paginationAction', 'Previous page');
+			const pages = document.createElement('ol'); pages.className = 'paginationPages';
+			for (let page = 1; page <= totalPages; page += 1) { const item = document.createElement('li'); const link = document.createElement('a'); link.className = `paginationPage${page === state.page ? ' paginationCurrent' : ''}`; link.href = currentPageHref(state, page); link.textContent = String(page); if (page === state.page) link.setAttribute('aria-current', 'page'); link.addEventListener('click', (event) => { event.preventDefault(); update((current) => ({ ...current, page })); }); item.append(link); pages.append(item); }
+			host.append(pages);
+			if (state.page < totalPages) addLink('Next›', state.page + 1, 'paginationAction', 'Next page');
+		};
+		const update = (change, mode) => {
+			const result = url.update(change, mode);
+			feedback = result.ok ? undefined : { message: result.error.message, failure: true };
+			render();
+		};
+		const render = () => {
+			const parsed = url.get();
+			const state = parsed.value;
+			const selected = selectProjects(state);
+			const outside = selected.total > 0 && state.page > selected.totalPages;
+			setValue('[data-url-search-input]', state.q);
+			setValue('[data-url-status]', state.status);
+			setValue('[data-url-sort]', state.sort);
+			setValue('[data-url-view]', state.view);
+			text('[data-url-path]', url.path());
+			const notice = selected.total === 0 ? 'No projects match these filters.' : outside ? `Page ${state.page} has no results. This view has ${selected.totalPages} pages.` : `Showing ${(state.page - 1) * PAGE_SIZE + 1}–${Math.min(state.page * PAGE_SIZE, selected.total)} of ${selected.total} projects. Page ${state.page} of ${selected.totalPages}.`;
+			text('[data-url-notice]', notice);
+			text('[data-url-feedback]', feedback?.message ?? 'Use Copy view link to share the full address, including any fragment.');
+			const feedbackNode = app.querySelector('[data-url-feedback]');
+			if (feedbackNode instanceof HTMLElement) feedbackNode.dataset.tone = feedback?.failure ? 'danger' : 'muted';
+			const issueList = parsed.issues.map((issue) => issue.message).join(' ');
+			text('[data-url-issues-list]', issueList);
+			hidden('[data-url-issues]', parsed.issues.length === 0);
+			const table = app.querySelector('[data-url-table]');
+			const cards = app.querySelector('[data-url-cards]');
+			const empty = app.querySelector('[data-url-empty]');
+			const hasRows = selected.rows.length > 0 && !outside;
+			hidden('[data-url-table]', !hasRows || state.view !== 'table');
+			hidden('[data-url-cards]', !hasRows || state.view !== 'cards');
+			hidden('[data-url-empty]', hasRows);
+			text('[data-url-empty-title]', selected.total === 0 ? 'No matching projects' : 'This page is outside the results');
+			text('[data-url-empty-body]', selected.total === 0 ? 'Try another search or remove the status filter.' : `The address requests page ${state.page}; these filters have ${selected.totalPages} pages.`);
+			const emptyAction = app.querySelector('[data-url-empty-action]');
+			if (emptyAction instanceof HTMLButtonElement) emptyAction.textContent = selected.total === 0 ? 'Show all projects' : 'Go to first page';
+			const tableRows = app.querySelector('[data-url-table-rows]');
+			if (tableRows instanceof HTMLElement) { tableRows.replaceChildren(); for (const project of selected.rows) { const row = document.createElement('tr'); row.className = 'displayTableRow'; for (const value of [project.name, project.owner]) { const cell = document.createElement('td'); cell.className = 'displayTableTd'; cell.textContent = value; row.append(cell); } const status = document.createElement('td'); status.className = 'displayTableTd'; status.append(statusBadge(project.status)); row.append(status); const updated = document.createElement('td'); updated.className = 'displayTableTd'; const time = document.createElement('time'); time.dateTime = project.updated; time.textContent = project.updated; updated.append(time); row.append(updated); tableRows.append(row); } }
+			if (cards instanceof HTMLElement) { cards.replaceChildren(); for (const project of selected.rows) { const card = document.createElement('article'); card.className = 'displayCard'; const head = document.createElement('div'); head.className = 'displayCardHeader'; const heading = document.createElement('div'); heading.className = 'displayCardHeading'; const title = document.createElement('h3'); title.className = 'typeHeading typeHeadingSm displayCardTitle'; title.textContent = project.name; const owner = document.createElement('p'); owner.className = 'displayCardDescription'; owner.textContent = project.owner; heading.append(title, owner); const action = document.createElement('div'); action.className = 'displayCardAction'; action.append(statusBadge(project.status)); head.append(heading, action); const body = document.createElement('div'); body.className = 'displayCardBody'; const updated = document.createElement('span'); updated.className = 'recipeTableMeta'; updated.textContent = `Updated ${project.updated}`; body.append(updated); card.append(head, body); cards.append(card); } }
+			renderPagination(state, selected.totalPages, outside);
+		};
+		app.querySelector('[data-url-search-form]')?.addEventListener('submit', (event) => { event.preventDefault(); const form = event.currentTarget; if (form instanceof HTMLFormElement) { const value = String(new FormData(form).get('q') ?? ''); update((current) => ({ ...current, q: value, page: 1 })); } });
+		app.querySelector('[data-url-status]')?.addEventListener('change', (event) => { if (event.currentTarget instanceof HTMLSelectElement) update((current) => ({ ...current, status: event.currentTarget.value, page: 1 })); });
+		app.querySelector('[data-url-sort]')?.addEventListener('change', (event) => { if (event.currentTarget instanceof HTMLSelectElement) update((current) => ({ ...current, sort: event.currentTarget.value, page: 1 })); });
+		app.querySelector('[data-url-view]')?.addEventListener('change', (event) => { if (event.currentTarget instanceof HTMLSelectElement) update((current) => ({ ...current, view: event.currentTarget.value })); });
+		app.querySelector('[data-url-reset]')?.addEventListener('click', () => update(() => collectionQuery.defaults));
+		app.querySelector('[data-url-empty-action]')?.addEventListener('click', () => {
+			const current = url.get().value;
+			update(() => selectProjects(current).total === 0 ? collectionQuery.defaults : { ...current, page: 1 });
+		});
+		app.querySelector('[data-url-canonical]')?.addEventListener('click', () => update((current) => current, 'replace'));
+		app.querySelector('[data-url-copy]')?.addEventListener('click', async () => { const path = url.path(); try { await navigator.clipboard.writeText(window.location.href); feedback = { message: 'Link copied. It includes this view’s current filters and page.' }; } catch { feedback = { message: 'The link could not be copied. Copy the address from your browser’s address bar.', failure: true }; } if (path === url.path()) render(); });
+		const unsubscribe = url.subscribe(render);
+		render();
+		window.addEventListener('pagehide', () => unsubscribe(), { once: true });
+	}
+
+</script>

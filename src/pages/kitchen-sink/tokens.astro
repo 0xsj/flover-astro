@@ -9,6 +9,7 @@ import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
 import { audit } from '../../lib/kitchen-sink/token-audit';
 import primitivesSource from '../../styles/tokens/primitives.css?raw';
 import semanticSource from '../../styles/tokens/semantic.css?raw';
+import chartSource from '../../styles/tokens/chart.css?raw';
 
 const checks = audit(primitivesSource, semanticSource);
 
@@ -35,6 +36,7 @@ const SEMANTIC = [
 const SPACE = ['--space-1', '--space-2', '--space-3', '--space-4', '--space-5', '--space-6', '--space-7', '--space-8', '--space-9', '--space-10', '--space-11', '--space-12'];
 const RADIUS = ['--radius-1', '--radius-2', '--radius-3', '--radius-4', '--radius-pill'];
 const CONTROL = ['--control-sm', '--control-md', '--control-lg'];
+const CHART = ['--chart-1', '--chart-2', '--chart-3', '--chart-4', '--chart-pos', '--chart-neg', '--chart-mid', '--chart-seq', '--chart-absent', '--chart-unattempted', '--chart-na', '--chart-grid', '--chart-axis', '--chart-label', '--chart-ink', '--chart-neutral'];
 ---
 
 <KitchenSinkLayout title="Tokens · flover-astro" description="The flover-astro design token catalog.">
@@ -78,6 +80,12 @@ const CONTROL = ['--control-sm', '--control-md', '--control-lg'];
 		<Case title="Semantic roles" note="Components should consume these names rather than reaching directly for raw palette values." source="src/styles/tokens/semantic.css">
 			<Swatches ramps={SEMANTIC} />
 			<pre slot="source" class="code"><code>{semanticSource}</code></pre>
+		</Case>
+
+		<Case title="Chart roles" note="Chart identity stays separate from application status colors." source="src/styles/tokens/chart.css">
+			<TokenChips tokens={CHART} />
+			<p class="limits">The chart family uses four fixed categorical slots. A fifth series must be grouped, faceted, or given a different visual treatment rather than silently recycling the first hue.</p>
+			<pre slot="source" class="code"><code>{chartSource}</code></pre>
 		</Case>
 
 		<Case title="Scale" note="space, radius and control height">

@@ -1,0 +1,131 @@
+---
+import { Badge, Panel, Table, TBody, Td, Th, THead, Tr } from '../../../components/display';
+import { Alert } from '../../../components/feedback';
+import Container from '../../../components/layout/Container.astro';
+import Flex from '../../../components/layout/Flex.astro';
+import PageHeader from '../../../components/patterns/PageHeader.astro';
+import CookbookLayout from '../../../layouts/CookbookLayout.astro';
+import {
+	assertNever,
+	chain,
+	DOMAIN_KINDS,
+	FAILURE_KINDS,
+	isRetryable,
+	isTransport,
+	rootCause,
+	retryDelay,
+	TRANSPORT_KINDS,
+	type Failure,
+	type FailureKind
+} from '../../../lib/kernel';
+import { listSessions } from '../../../lib/services/session';
+import { serverRoot } from '../../../lib/server/root';
+import '../../../styles/cookbook.css';
+
+const PLAN = (kind: string): string =>
+	`/cookbook/failures?chaos=${encodeURIComponent(`GET /auth/sessions=fail:${kind}`)}`;
+const forced = Astro.url.searchParams.get('chaos');
+const root = serverRoot(Astro);
+const answered = await listSessions(root.clientFor('session'));
+const failure = answered.ok ? null : answered.error;
+
+function handling(value: Failure): { verdict: string; surface: string } {
+	switch (value.kind) {
+		case 'unauthenticated': return { verdict: 'send them to sign in', surface: 'a redirect, not a message' };
+		case 'forbidden': return { verdict: 'say no, and do not offer a retry', surface: 'an inline refusal' };
+		case 'rate_limited': return { verdict: `wait ${value.retryAfter ?? '?'}s, then retry`, surface: 'a countdown, not an error' };
+		case 'unavailable': return { verdict: 'retry with backoff', surface: 'keep the last good value on screen' };
+		case 'timeout': return { verdict: 'retry with backoff', surface: 'a retry control' };
+		case 'canceled': return { verdict: 'do nothing at all', surface: 'nothing — they asked' };
+		case 'internal': return { verdict: 'report it with the reference', surface: 'an apology and the id' };
+		case 'not_found': return { verdict: 'this read never promised it', surface: 'folded to internal' };
+		case 'invalid': return { verdict: 'put each message on its field', surface: `${Object.keys(value.fields).length} field message(s)` };
+		case 'conflict': return { verdict: 'the world moved; re-read and re-offer', surface: 'a message above the form' };
+		default: return assertNever(value, 'failure kind');
+	}
+}
+
+const ADVICE: Record<FailureKind, string> = {
+	unauthenticated: 'send them to sign in',
+	forbidden: 'say no; never offer a retry for an answer',
+	rate_limited: "honour the server's own retry-after",
+	unavailable: 'retry with backoff, keep the last good value',
+	timeout: 'retry with backoff',
+	canceled: 'do nothing — they asked',
+	internal: 'report it, quoting the reference',
+	not_found: 'declare it, or it folds to internal',
+	invalid: 'put each message beside its field',
+	conflict: 're-read and re-offer; never retry blindly'
+};
+const retryVerdict = (kind: FailureKind): string => {
+	const delay = retryDelay({ kind, message: '' } as Failure, 0);
+	return delay === null ? 'no — it is an answer' : `after ${delay}ms`;
+};
+const decided = failure ? handling(failure) : null;
+const causes = failure ? chain(failure) : [];
+const formState = failure
+	? failure.kind === 'invalid'
+		? { message: failure.message, fields: failure.fields }
+		: { message: failure.message }
+	: null;
+---
+
+<CookbookLayout
+	title="Failures · Cookbook · flover-astro"
+	description="Inspect every failure kind through the transport and service boundaries."
+>
+	<Container width="page">
+		<PageHeader
+			title="Name every failure honestly"
+			description="Every kind, forced through the real stack. The server boundary turns the query plan into a transport answer, the service preserves its promise, and the page makes the caller’s obligation visible."
+		>
+			<a slot="actions" class="button buttonSecondary buttonMd" href="/cookbook">All recipes</a>
+		</PageHeader>
+
+		<div class="recipeStack">
+			<Panel title="Force one">
+				<div class="recipeStack recipeStackTight">
+					<div><div class="recipeGroupLabel">Transport — any call can produce these</div><div class="recipeChoiceGroup">{TRANSPORT_KINDS.map((kind) => <a class="recipeChip" href={PLAN(kind)} data-on={forced?.includes(`:${kind}`) ? '' : undefined}>{kind}</a>)}</div></div>
+					<div><div class="recipeGroupLabel">Domain — this read promises none of these</div><div class="recipeChoiceGroup">{DOMAIN_KINDS.map((kind) => <a class="recipeChip" href={PLAN(kind)} data-on={forced?.includes(`:${kind}`) ? '' : undefined}>{kind}</a>)}</div></div>
+					<div class="recipeChoiceGroup"><a class="recipeChip" href="/cookbook/failures">none — succeed</a><a class="recipeChip" href="/cookbook/failures?chaos=GET%20%2Fauth%2Fsessions%3Dempty%3Alist">empty:list</a><a class="recipeChip" href="/cookbook/failures?chaos=GET%20%2Fauth%2Fsessions%3Dlatency%3A3000">latency:3000</a></div>
+				</div>
+			</Panel>
+
+			{failure ? (
+				<div class="recipeGrid">
+					<Panel title="What arrived">
+						<dl class="recipeFacts">
+							<div><dt>kind</dt><dd class="recipeMono">{failure.kind}</dd></div>
+							<div><dt>half</dt><dd>{isTransport(failure) ? 'transport — cannot be narrowed away' : 'domain — an operation may declare it'}</dd></div>
+							<div><dt>message</dt><dd>{failure.message}</dd></div>
+							<div><dt>type</dt><dd class="recipeMono">{failure.type ?? '–'}</dd></div>
+							<div><dt>status</dt><dd class="recipeMono">{failure.status === undefined ? '–' : String(failure.status)}</dd></div>
+							<div><dt>requestId</dt><dd class="recipeMono">{failure.requestId ?? '–'}<small>this attempt; different on a retry</small></dd></div>
+							<div><dt>correlationId</dt><dd class="recipeMono">{failure.correlationId ?? '–'}<small>{failure.correlationId === root.correlationId ? 'this interaction — shared by this request' : 'this interaction'}</small></dd></div>
+						</dl>
+					</Panel>
+					<Panel title="What a caller may do">
+						<dl class="recipeFacts">
+							<div><dt>retryable</dt><dd>{isRetryable(failure) ? 'yes' : 'no — it is an ANSWER'}</dd></div>
+							<div><dt>retryDelay</dt><dd class="recipeMono">{[0, 1, 2].map((attempt) => retryDelay(failure, attempt)).map((delay) => delay === null ? 'never' : `${delay}ms`).join(' · ')}<small>attempt 0 · 1 · 2</small></dd></div>
+							<div><dt>verdict</dt><dd>{decided?.verdict}</dd></div>
+							<div><dt>surface</dt><dd>{decided?.surface}</dd></div>
+							<div><dt>as form state</dt><dd class="recipeMono">{JSON.stringify(formState)}</dd></div>
+						</dl>
+					</Panel>
+				</div>
+			) : (
+				<Alert tone="info" title="The read succeeded">{answered.ok ? `${answered.value.length} session(s), and no failure to dissect. Force one above.` : ''}</Alert>
+			)}
+
+			{failure && <Panel title={causes.length > 1 ? 'Folded — the cause survived' : 'Cause chain'}>
+				{causes.length > 1 ? <div class="recipeStack recipeStackTight"><p class="recipeNote">This read promised <strong>no domain kind</strong>, so the unexpected kind was folded to <code>internal</code> while the original stayed underneath.</p><ol class="recipeChain">{causes.map((cause) => <li><span class="recipeMono">{cause.kind}</span><span class="recipeTableMeta">{cause.message}</span></li>)}</ol><p class="recipeNote"><code>rootCause</code> is <span class="recipeMono">{rootCause(failure).kind}</span> — what the server actually said.</p></div> : <p class="recipeNote">One link: the operation promised this kind, so it arrived unchanged. Force <code>not_found</code> to see a fold — this read declares none of it.</p>}
+			</Panel>}
+
+			<Panel title="The whole union, and what each branch owes">
+				<Table caption="Failure kinds and caller obligations"><THead><Tr><Th>kind</Th><Th>half</Th><Th>retryable</Th><Th>a caller must</Th></Tr></THead><TBody>{FAILURE_KINDS.map((kind) => <Tr><Td><a class="recipeMono" href={PLAN(kind)}>{kind}</a></Td><Td><Badge tone={(TRANSPORT_KINDS as readonly string[]).includes(kind) ? 'accent' : 'warn'}>{(TRANSPORT_KINDS as readonly string[]).includes(kind) ? 'transport' : 'domain'}</Badge></Td><Td>{retryVerdict(kind)}</Td><Td class="recipeTableMeta">{ADVICE[kind]}</Td></Tr>)}</TBody></Table>
+				<p class="recipeNote">Ten kinds and no eleventh. The exhaustive switch in this route has a branch for each, so adding one to the union breaks the build here rather than falling through to a shrug.</p>
+			</Panel>
+		</div>
+	</Container>
+</CookbookLayout>

@@ -1,0 +1,34 @@
+---
+import '../../styles/charts.css';
+import { divergingFill, px, sequentialFill } from '../../lib/charts';
+
+interface Props {
+	kind?: 'sequential' | 'diverging';
+	domain: readonly [number, number];
+	midpoint?: number;
+	label?: string;
+	steps?: number;
+	width?: number;
+}
+
+const { kind = 'sequential', domain, midpoint = 0, label, steps: requestedSteps = 9, width = 180 } = Astro.props;
+const steps = Number.isFinite(requestedSteps) ? Math.max(2, Math.min(64, Math.floor(requestedSteps))) : 9;
+const extent = Math.max(1e-9, Math.abs(domain[0] - midpoint), Math.abs(domain[1] - midpoint));
+const cellWidth = width / steps;
+const fills = Array.from({ length: steps }, (_, index) => {
+	const value = domain[0] + (index / (steps - 1)) * (domain[1] - domain[0]);
+	const t = kind === 'diverging' ? (value - midpoint) / extent : index / (steps - 1);
+	return kind === 'diverging' ? divergingFill(t) : sequentialFill(t);
+});
+const fmt = (value: number) => Math.abs(value) >= 1000 ? `${(value / 1000).toFixed(1)}k` : String(Math.round(value * 100) / 100);
+---
+
+<figure class="chartColourBar">
+	<svg viewBox={`0 0 ${px(width)} 26`} style={`inline-size:${width}px`} aria-hidden="true">
+		{fills.map((fill, index) => <rect x={px(index * cellWidth)} y="0" width={px(cellWidth)} height="10" style={`fill:${fill}`}></rect>)}
+		<text class="chartColourTick" x="0" y="23">{fmt(domain[0])}</text>
+		{kind === 'diverging' ? <text class="chartColourTick" x={px(domain[1] === domain[0] ? width / 2 : ((midpoint - domain[0]) / (domain[1] - domain[0])) * width)} y="23" text-anchor="middle">{fmt(midpoint)}</text> : null}
+		<text class="chartColourTick" x={px(width)} y="23" text-anchor="end">{fmt(domain[1])}</text>
+	</svg>
+	<figcaption>{label ?? 'Color scale'} · {domain[0]}{kind === 'diverging' ? ` · ${midpoint}` : ''} · {domain[1]}</figcaption>
+</figure>

@@ -1,0 +1,87 @@
+---
+import '../../styles/charts.css';
+import ChartData from './ChartData.astro';
+import type { Cell } from '../../lib/charts';
+import { band, divergingFill, px, sequentialFill } from '../../lib/charts';
+
+interface Props {
+	rows: readonly string[];
+	columns: readonly string[];
+	cell: (row: string, column: string) => Cell;
+	width?: number;
+	height?: number;
+	ramp?: 'diverging' | 'sequential';
+	midpoint?: number;
+	extent?: number;
+	title?: string;
+	selectable?: boolean;
+	[key: string]: unknown;
+}
+
+const { rows, columns, cell: readCell, width = 520, height: requestedHeight, ramp = 'sequential', midpoint = 0, extent, title = 'Coverage matrix', selectable: selectableProp = false, class: className, ...rest } = Astro.props;
+const sampled = new Map(rows.map((row) => [row, new Map(columns.map((column) => [column, readCell(row, column)]))]));
+const cellAt = (row: string, column: string) => sampled.get(row)?.get(column) ?? { state: 'na' as const };
+const margin = { top: 8, right: 8, bottom: 76, left: 128 };
+const plotWidth = Math.max(1, width - margin.left - margin.right);
+const cellSize = Math.max(8, plotWidth / Math.max(1, columns.length));
+const plotHeight = requestedHeight === undefined ? cellSize * rows.length : Math.max(1, requestedHeight - margin.top - margin.bottom);
+const totalHeight = requestedHeight ?? plotHeight + margin.top + margin.bottom;
+const x = band(columns, [0, plotWidth], 0.06);
+const y = band(rows, [0, plotHeight], 0.06);
+const span = extent ?? Math.max(1e-9, ...rows.flatMap((row) => columns.map((column) => { const value = cellAt(row, column); return value.state === 'value' && Number.isFinite(value.value) ? Math.abs(value.value - midpoint) : 0; })));
+const describe = (value: Cell) => {
+	switch (value.state) {
+		case 'value': return Number.isFinite(value.value) ? String(value.value) : 'Unavailable measurement';
+		case 'absent': return 'looked, found nothing';
+		case 'unattempted': return 'never checked';
+		case 'na': return 'not applicable — no question to ask';
+	}
+};
+const stateOf = (value: Cell) => value.state === 'value' && !Number.isFinite(value.value) ? 'unavailable' : value.state;
+const fillOf = (value: Cell) => {
+	if (value.state !== 'value' || !Number.isFinite(value.value)) return undefined;
+	return ramp === 'diverging' ? divergingFill((value.value - midpoint) / span) : sequentialFill((value.value - midpoint) / span);
+};
+const selectable = Boolean(selectableProp);
+---
+
+{rows.length && columns.length ? (
+	<div {...rest} class:list={['matrixViewport', className]} data-astro-matrix>
+		<svg viewBox={`0 0 ${px(width)} ${px(totalHeight)}`} width={px(width)} height={px(totalHeight)} class="chartMatrix" role={selectable ? 'group' : 'img'} aria-label={title}>
+			<title>{title}</title>
+			<g transform={`translate(${px(margin.left)} ${px(margin.top)})`}>
+				{rows.map((row) => columns.map((column) => { const value = cellAt(row, column); const description = `${row} · ${column} — ${describe(value)}`; return <rect class:list={['matrixCell', `matrixCell${stateOf(value)[0].toUpperCase()}${stateOf(value).slice(1)}`]} data-matrix-cell={selectable ? '' : undefined} data-row={selectable ? row : undefined} data-column={selectable ? column : undefined} x={px(x(column))} y={px(y(row))} width={px(x.bandWidth)} height={px(y.bandWidth)} style={fillOf(value) ? `fill:${fillOf(value)}` : undefined} role={selectable ? 'button' : undefined} tabindex={selectable ? 0 : undefined} aria-label={selectable ? description : undefined}><title>{description}</title></rect>; }))}
+				{rows.map((row) => columns.filter((column) => cellAt(row, column).state === 'unattempted').map((column) => <rect class="matrixUnattempted" x={px(x(column) + 0.5)} y={px(y(row) + 0.5)} width={px(x.bandWidth - 1)} height={px(y.bandWidth - 1)}></rect>))}
+				{rows.map((row) => columns.filter((column) => cellAt(row, column).state === 'na').map((column) => <line class="matrixNa" x1={px(x(column) + 2)} y1={px(y(row) + y.bandWidth - 2)} x2={px(x(column) + x.bandWidth - 2)} y2={px(y(row) + 2)}></line>))}
+				{rows.map((row) => <text class="matrixLabel" x="-6" y={px(y(row) + y.bandWidth / 2 + 3)} text-anchor="end">{row}</text>)}
+				{columns.map((column) => <text class="matrixLabel" transform={`translate(${px(x(column) + x.bandWidth / 2)} ${px(plotHeight + 6)}) rotate(-42)`} text-anchor="end">{column}</text>)}
+			</g>
+		</svg>
+	</div>
+) : <p class="chartMarkMessage">No measurements to display.</p>}
+
+<ChartData title={title}>
+	<table class="displayTable">
+		<caption class="displayTableCaption">{title}</caption>
+		<thead class="displayTableHead"><tr class="displayTableRow"><th class="displayTableTh">Item</th>{columns.map((column) => <th class="displayTableTh">{column}</th>)}</tr></thead>
+		<tbody>{rows.map((row) => <tr class="displayTableRow"><th scope="row" class="displayTableTh">{row}</th>{columns.map((column) => { const text = describe(cellAt(row, column)); return <td class="displayTableTd">{selectable ? <button class="chartMatrixTableButton" type="button" data-matrix-table-row={row} data-matrix-table-column={column}>{text}</button> : text}</td>; })}</tr>)}</tbody>
+	</table>
+</ChartData>
+
+
+<script>
+	const matrices = document.querySelectorAll('[data-astro-matrix]');
+	matrices.forEach((matrix) => {
+		const dispatch = (target) => {
+			if (!(target instanceof Element)) return;
+			const row = target.getAttribute('data-row') ?? target.getAttribute('data-matrix-table-row');
+			const column = target.getAttribute('data-column') ?? target.getAttribute('data-matrix-table-column');
+			if (row && column) matrix.dispatchEvent(new CustomEvent('astro-matrix-select', { bubbles: true, detail: { row, column } }));
+		};
+		matrix.querySelectorAll('[data-matrix-cell]').forEach((cell) => {
+			cell.addEventListener('click', () => dispatch(cell));
+			cell.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); dispatch(cell); } });
+		});
+		matrix.querySelectorAll('[data-matrix-table-row]').forEach((cell) => cell.addEventListener('click', () => dispatch(cell)));
+	});
+</script>

@@ -12,5 +12,14 @@
  * The fixture table is composed explicitly from the ported service domains. An
  * unserved request remains an explicit `internal` / `unserved_route` result.
  * Service ports never register routes through module-import side effects.
+ *
+ * Cookbook scenarios are separate composition roots under this directory:
+ * `item-workflow.ts` owns durable drafts and save receipts,
+ * `session-recovery.ts` adds an isolated identity endpoint, and
+ * `resilience.ts` composes finite response and lost-write simulations, while
+ * `dashboard.ts` keeps the account dashboard's session read/revoke contract
+ * service-backed without depending on the not-yet-ported auth UI. They
+ * inject storage and memory clients, so importing a production root cannot
+ * accidentally enable demo behavior.
  */
 export {};

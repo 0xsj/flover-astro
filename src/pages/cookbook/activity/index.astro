@@ -1,0 +1,219 @@
+---
+import { Card, CardBody, CardDescription, CardHeader, CardTitle, Empty, THead, Th, Tr } from '../../../components/display';
+import { Button } from '../../../components/forms';
+import Container from '../../../components/layout/Container.astro';
+import PageHeader from '../../../components/patterns/PageHeader.astro';
+import Text from '../../../components/typography/Text.astro';
+import CookbookLayout from '../../../layouts/CookbookLayout.astro';
+import '../../../styles/cookbook.css';
+---
+
+<CookbookLayout
+	title="Activity · Cookbook · flover-astro"
+	description="Cursor-paged activity with explicit filters, empty states, and interaction correlation."
+>
+	<Container width="page">
+		<PageHeader
+			title="Keep an append-only activity trail"
+			description="Read the ledger a page at a time, filter by facet or interaction, and keep a refused read distinct from a legitimate empty result."
+		>
+			<Button slot="actions" href="/cookbook" intent="secondary">All recipes</Button>
+		</PageHeader>
+
+		<Card>
+			<CardHeader>
+				<CardTitle level={2}>Activity</CardTitle>
+				<CardDescription>These rows come from the ledger fixture through the same service decoder used by the server endpoint. This page uses an isolated demo session until the auth UI boundary is ported.</CardDescription>
+			</CardHeader>
+			<CardBody>
+				<div class="recipeStack recipeStackTight" data-activity-app>
+					<div class="recipeChoiceGroup" data-activity-facets aria-label="Activity facets">
+						<button type="button" class="recipeChip" data-on>everything</button>
+					</div>
+					<div class="recipeStatus" data-activity-state role="status" aria-live="polite">Reading the activity ledger…</div>
+					<div class="recipeNotice" data-activity-error data-tone="danger" hidden></div>
+					<div class="recipeTableScroll" data-activity-table-wrap>
+						<table class="displayTable">
+							<caption class="displayTableCaption">Everything recorded for this demo account, newest first</caption>
+							<THead><Tr><Th>when</Th><Th>action</Th><Th>subject</Th><Th>actor</Th><Th>scope</Th><Th>interaction</Th></Tr></THead>
+							<tbody data-activity-rows></tbody>
+						</table>
+					</div>
+					<div data-activity-empty hidden><Empty title="Nothing here" body="No activity matched the current filters." /></div>
+					<div class="recipeFormActions" data-activity-footer>
+						<Button size="sm" data-activity-more>Load more</Button>
+						<span class="recipeTableMeta" data-activity-summary></span>
+					</div>
+				</div>
+			</CardBody>
+		</Card>
+
+		<Text size="sm" tone="muted">There is no total and no page number. The presence of a cursor is the answer: the log grows at its head, so an offset would re-show rows and hide the ones that took their place. Each row keeps its correlation id so an interaction can be followed without inventing a second timeline.</Text>
+	</Container>
+</CookbookLayout>
+
+<script>
+	import { createRoot } from '../../../lib/root';
+	import { getMyActivity } from '../../../lib/services/ledger';
+
+	const app = document.querySelector('[data-activity-app]');
+	if (app instanceof HTMLElement) {
+		const client = createRoot({ token: 'astro-demo-session', latencyMs: { min: 220, max: 480 } }).clientFor('ledger');
+		const rows = app.querySelector('[data-activity-rows]');
+		const facetsHost = app.querySelector('[data-activity-facets]');
+		const tableWrap = app.querySelector('[data-activity-table-wrap]');
+		const empty = app.querySelector('[data-activity-empty]');
+		const error = app.querySelector('[data-activity-error]');
+		const more = app.querySelector('[data-activity-more]');
+		const summary = app.querySelector('[data-activity-summary]');
+		let facet;
+		let correlation;
+		let entries = [];
+		let next;
+		let facets = [];
+		let generation = 0;
+		let controller;
+
+		const text = (selector, value) => {
+			const node = app.querySelector(selector);
+			if (node) node.textContent = value;
+		};
+		const setHidden = (node, value) => {
+			if (node instanceof HTMLElement) node.hidden = value;
+		};
+		const relative = (iso) => {
+			const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+			if (minutes < 1) return 'just now';
+			if (minutes < 60) return `${minutes}m ago`;
+			const hours = Math.round(minutes / 60);
+			if (hours < 48) return `${hours}h ago`;
+			return `${Math.round(hours / 24)}d ago`;
+		};
+		const badgeTone = (scope) => scope === 'account' ? 'badgeAccent' : scope === 'system' ? 'badgeWarn' : 'badgeNeutral';
+		const cell = (value, className = '') => {
+			const node = document.createElement('td');
+			node.className = `displayTableTd ${className}`.trim();
+			node.textContent = value;
+			return node;
+		};
+		const renderRows = () => {
+			if (!(rows instanceof HTMLElement)) return;
+			rows.replaceChildren();
+			for (const entry of entries) {
+				const row = document.createElement('tr');
+				row.className = 'displayTableRow';
+				const when = cell(relative(entry.occurred_at), 'recipeTableMeta');
+				when.title = entry.occurred_at;
+				row.append(when);
+				const action = document.createElement('td');
+				action.className = 'displayTableTd';
+				const actionName = document.createElement('span');
+				actionName.className = 'recipeAction';
+				actionName.textContent = entry.action;
+				action.append(actionName);
+				const detail = Object.entries(entry.detail);
+				if (detail.length) {
+					const detailNode = document.createElement('div');
+					detailNode.className = 'recipeTableMeta';
+					detailNode.textContent = detail.map(([key, value]) => `${key}: ${String(value)}`).join(' · ');
+					action.append(detailNode);
+				}
+				row.append(action, cell(entry.subject, 'recipeMono'), cell(entry.actor === 'anonymous' ? 'not signed in' : entry.actor, entry.actor === 'anonymous' ? 'recipeTableMeta' : 'recipeMono'));
+				const scope = document.createElement('td');
+				scope.className = 'displayTableTd';
+				const scopeBadge = document.createElement('span');
+				scopeBadge.className = `badge ${badgeTone(entry.scope)}`;
+				scopeBadge.textContent = entry.scope;
+				scope.append(scopeBadge);
+				row.append(scope);
+				const interaction = document.createElement('td');
+				interaction.className = 'displayTableTd';
+				const correlationButton = document.createElement('button');
+				correlationButton.type = 'button';
+				correlationButton.className = 'recipeCorrelation';
+				correlationButton.title = 'Everything else in this interaction';
+				correlationButton.textContent = entry.correlation_id.slice(0, 12);
+				correlationButton.addEventListener('click', () => {
+					facet = undefined;
+					correlation = entry.correlation_id;
+					void load(true);
+				});
+				interaction.append(correlationButton);
+				row.append(interaction);
+				rows.append(row);
+			}
+		};
+		const render = (loading = false) => {
+			if (facetsHost instanceof HTMLElement) {
+				facetsHost.replaceChildren();
+				const everything = document.createElement('button');
+				everything.type = 'button';
+				everything.className = 'recipeChip';
+					if (!facet && !correlation) everything.dataset.on = '';
+				everything.textContent = 'everything';
+				everything.addEventListener('click', () => { facet = undefined; correlation = undefined; void load(true); });
+				facetsHost.append(everything);
+				for (const item of facets) {
+					const button = document.createElement('button');
+					button.type = 'button';
+					button.className = 'recipeChip';
+					if (facet === item.facet) button.dataset.on = '';
+					button.textContent = item.facet;
+					const count = document.createElement('span');
+					count.className = 'recipeChipCount';
+					count.textContent = String(item.total);
+					button.append(count);
+					button.addEventListener('click', () => { facet = item.facet; correlation = undefined; void load(true); });
+					facetsHost.append(button);
+				}
+				if (correlation) {
+					const button = document.createElement('button');
+					button.type = 'button';
+					button.className = 'recipeChip';
+					button.dataset.on = '';
+					button.textContent = `interaction ${correlation.slice(0, 12)} ×`;
+					button.addEventListener('click', () => { correlation = undefined; void load(true); });
+					facetsHost.append(button);
+				}
+			}
+			setHidden(tableWrap, loading || entries.length === 0);
+			setHidden(empty, loading || entries.length !== 0);
+			setHidden(error, true);
+			text('[data-activity-state]', loading ? 'Reading the activity ledger…' : entries.length ? 'Activity loaded.' : correlation ? 'No other entry belongs to that interaction.' : facet ? `No ${facet} activity yet.` : 'Nothing has happened on this account yet.');
+			text('[data-activity-summary]', entries.length ? `${entries.length} shown of – — no total is computed.` : '');
+			if (more instanceof HTMLButtonElement) {
+				more.disabled = loading || !next;
+				more.textContent = next ? 'Load more' : entries.length ? 'That is the whole log.' : 'Load more';
+			}
+			if (!loading) renderRows();
+		};
+		const load = async (reset = false) => {
+			controller?.abort();
+			controller = new AbortController();
+			const own = ++generation;
+			if (reset) {
+				entries = [];
+				next = undefined;
+				facets = [];
+			}
+			render(true);
+			const result = await getMyActivity(client, { after: reset ? undefined : next, limit: 8, facet, correlation, signal: controller.signal });
+			if (own !== generation) return;
+			if (!result.ok) {
+				setHidden(tableWrap, true);
+				setHidden(empty, true);
+				setHidden(error, false);
+				text('[data-activity-state]', 'The activity read failed.');
+				text('[data-activity-error]', result.error.message);
+				if (more instanceof HTMLButtonElement) more.disabled = true;
+				return;
+			}
+			entries = [...entries, ...result.value.entries];
+			next = result.value.next;
+			if (reset) facets = result.value.facets ?? [];
+			render();
+		};
+		if (more instanceof HTMLButtonElement) more.addEventListener('click', () => void load(false));
+		void load(true);
+	}
+</script>

@@ -1,0 +1,104 @@
+---
+import { BarChart, ChartFrame, ChartLegend, LineChart, type ChartSeries } from '../../components/charts';
+import { Button } from '../../components/forms';
+import { Card, CardBody, CardTitle, Mock, Panel } from '../../components/display';
+import Case from '../../components/kitchen-sink/Case.astro';
+import Section from '../../components/kitchen-sink/Section.astro';
+import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
+import chartFrameSource from '../../components/charts/ChartFrame.astro?raw';
+import lineChartSource from '../../components/charts/LineChart.astro?raw';
+import chartDoc from '../../components/charts/doc.ts?raw';
+
+const series: readonly ChartSeries[] = [
+	{ key: 'current', label: 'This period', tone: 'accent' },
+	{ key: 'previous', label: 'Previous period', tone: 'info', line: 'dashed' }
+];
+const values = [18, 24, 21, 31, 28, 35, 42, 38, 46, 43, 51, 48, 58, 64];
+const lineData = values.map((value, index) => ({
+	label: `Sep ${index + 1}`,
+	values: { current: value, previous: Math.round(value * 0.7) + (index % 3) * 3 }
+}));
+const balance: readonly ChartSeries[] = [{ key: 'balance', label: 'Net change', tone: 'accent' }];
+---
+
+<KitchenSinkLayout title="Charts · flover-astro" description="Dependency-free metric charts with exact values available as text.">
+	<Section
+		id="charts"
+		title="Charts"
+		blurb="Small, dependency-free charts for ordinary metrics, with exact values available as text. ChartFrame and ChartLegend compose around richer chart engines when a product needs one."
+	>
+		<Case title="Chart frame and line series" note="named series, distinct strokes, range controls, and a data table" source={['src/components/charts/ChartFrame.astro', 'src/components/charts/LineChart.astro', 'src/components/charts/doc.ts']}>
+			<ChartFrame title="Completed work" description="Items completed per day, compared with the previous period.">
+				<div slot="actions" role="group" aria-label="Chart period">
+					<Button size="sm" intent="secondary" aria-pressed="true" data-chart-period="7">7 days</Button>
+					<Button size="sm" intent="ghost" aria-pressed="false" data-chart-period="14">14 days</Button>
+				</div>
+				<div slot="legend"><ChartLegend series={series} /></div>
+				<div class="chartPeriodPanel" data-chart-period-panel="7"><LineChart label="Completed work over 7 days" data={lineData.slice(-7)} series={series} /></div>
+				<div class="chartPeriodPanel" data-chart-period-panel="14" hidden><LineChart label="Completed work over 14 days" data={lineData} series={series} /></div>
+				<div slot="footer"><Mock note="Illustrative measurements, generated locally for this example." /></div>
+			</ChartFrame>
+			<pre slot="source" class="code"><code>{`${chartFrameSource}\n\n${lineChartSource}\n\n${chartDoc}`}</code></pre>
+		</Case>
+
+		<Case title="Bar chart" note="ranked categories; zero is a measured value">
+			<ChartFrame title="Projects by team" description="Counts are printed beside each bar. Unavailable measurements have no invented value.">
+				<BarChart
+					label="Projects by team"
+					data={[
+						{ label: 'Engineering', value: 28 },
+						{ label: 'Operations', value: 17 },
+						{ label: 'Design', value: 9 },
+						{ label: 'Research', value: 0 },
+						{ label: 'External partners', value: null }
+					]}
+				/>
+			</ChartFrame>
+		</Case>
+
+		<Case title="Missing and negative values" note="a missing measurement breaks the line; it never becomes zero">
+			<ChartFrame title="Net member change" footer="Wednesday is unavailable. Thursday was measured and its change was zero.">
+				<div slot="legend"><ChartLegend series={balance} /></div>
+				<LineChart
+					label="Net member change"
+					series={balance}
+					data={[
+						{ label: 'Mon', values: { balance: 5 } },
+						{ label: 'Tue', values: { balance: -3 } },
+						{ label: 'Wed', values: { balance: null } },
+						{ label: 'Thu', values: { balance: 0 } },
+						{ label: 'Fri', values: { balance: 4 } }
+					]}
+				/>
+			</ChartFrame>
+		</Case>
+
+		<Case title="Small and empty datasets" note="one point, a constant series, no rows, and no measurements">
+			<div class="chartExamplesGrid">
+				<Panel title="Single measurement"><LineChart label="Single measurement" series={balance} data={[{ label: 'Today', values: { balance: 4 } }]} /></Panel>
+				<Panel title="Constant zero"><LineChart label="Constant zero" series={balance} data={[{ label: 'Mon', values: { balance: 0 } }, { label: 'Tue', values: { balance: 0 } }, { label: 'Wed', values: { balance: 0 } }]} /></Panel>
+				<Panel title="No rows"><BarChart label="No rows" data={[]} /><LineChart label="No line rows" series={balance} data={[]} /></Panel>
+				<Panel title="Unavailable"><LineChart label="Unavailable measurements" series={balance} data={[{ label: 'Mon', values: { balance: null } }, { label: 'Tue', values: { balance: null } }]} /><BarChart label="Invalid measurements" data={[{ label: 'Missing', value: null }, { label: 'Invalid', value: Number.NaN }]} /></Panel>
+			</div>
+		</Case>
+
+		<Card>
+			<CardBody><CardTitle level={2}>Related chart batches</CardTitle><p class="limits">Statistical marks and deterministic graph/network presets are cataloged as separate batches because their axis, matrix, layout, and selection contracts are materially larger than ordinary metric charts.</p></CardBody>
+		</Card>
+	</Section>
+</KitchenSinkLayout>
+
+<script>
+	const buttons = [...document.querySelectorAll('[data-chart-period]')];
+	const panels = [...document.querySelectorAll('[data-chart-period-panel]')];
+	const setPeriod = (period) => {
+		buttons.forEach((button) => {
+			const active = button.dataset.chartPeriod === period;
+			button.setAttribute('aria-pressed', String(active));
+			button.classList.toggle('buttonSecondary', active);
+			button.classList.toggle('buttonGhost', !active);
+		});
+		panels.forEach((panel) => { panel.hidden = panel.dataset.chartPeriodPanel !== period; });
+	};
+	buttons.forEach((button) => button.addEventListener('click', () => setPeriod(button.dataset.chartPeriod ?? '7')));
+</script>

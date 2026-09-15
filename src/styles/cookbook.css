@@ -1,0 +1,190 @@
+@layer screen {
+	.cookbookShell { min-block-size: 100vh; }
+	.cookbookHeader {
+		position: sticky;
+		inset-block-start: 0;
+		z-index: var(--z-sticky);
+		border-block-end: 1px solid var(--line);
+		background: color-mix(in srgb, var(--surface-ground) 94%, transparent);
+		backdrop-filter: blur(14px);
+	}
+	.cookbookHeaderInner {
+		display: flex;
+		align-items: center;
+		gap: var(--space-5);
+		max-inline-size: var(--page-max);
+		min-block-size: 64px;
+		margin-inline: auto;
+		padding: var(--space-4) var(--space-7);
+	}
+	.cookbookWordmark { color: var(--ink); font-weight: var(--weight-bold); letter-spacing: var(--tracking-tight); text-decoration: none; }
+	.cookbookLabel { color: var(--ink-4); font-size: var(--text-11-5); }
+	.cookbookNav { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: var(--space-2); margin-inline-start: auto; }
+	.cookbookNavLink { padding: var(--space-2) var(--space-3); border-radius: var(--radius-1); color: var(--ink-3); font-size: var(--text-11-5); text-decoration: none; }
+	.cookbookNavLink:hover { background: var(--surface-hover); color: var(--ink); }
+	.cookbookNavActive { color: var(--ink); background: var(--accent-tint); }
+	.cookbookMain { max-inline-size: var(--page-max); margin-inline: auto; padding: var(--space-10) var(--space-7) var(--space-12); }
+	.cookbookMain:focus { outline: none; }
+	.cookbookSkip { position: fixed; inset-block-start: -100px; inset-inline-start: var(--space-6); z-index: var(--z-palette); padding: var(--space-4); background: var(--surface-panel); color: var(--ink); }
+	.cookbookSkip:focus { inset-block-start: var(--space-4); }
+	.pageHeader { display: flex; align-items: end; justify-content: space-between; gap: var(--space-7); margin-block-end: var(--space-9); }
+	.pageHeaderCopy { display: grid; gap: var(--space-4); min-inline-size: 0; }
+	.pageHeaderDescription { max-inline-size: 62ch; }
+	.pageHeaderActions { display: flex; flex: none; align-items: center; gap: var(--space-3); }
+	.cookbookStack { display: grid; gap: var(--space-8); }
+	.cookbookGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: var(--space-6); }
+	.recipeCardLeading { display: grid; place-items: center; inline-size: 32px; block-size: 32px; border: 1px solid var(--accent-line); border-radius: var(--radius-2); background: var(--accent-tint); color: var(--accent); font-family: var(--font-mono); font-size: var(--text-11); font-weight: var(--weight-bold); }
+	.cookbookFooter { display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap; padding-block-start: var(--space-2); }
+
+	.recipeStack { display: grid; gap: var(--space-7); }
+	.recipeGrid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(300px, .9fr); gap: var(--space-7); align-items: start; }
+	.recipePanel { min-inline-size: 0; }
+	.recipeBadge { display: inline-flex; align-items: center; min-block-size: 22px; padding-inline: var(--space-3); border: 1px solid var(--line); border-radius: var(--radius-pill); background: var(--surface-hover); color: var(--ink-3); font-size: var(--text-10); font-weight: var(--weight-medium); white-space: nowrap; }
+	.recipeBadge[data-tone='accent'] { border-color: var(--accent-line); background: var(--accent-tint); color: var(--accent); }
+	.recipeBadge[data-tone='warn'] { border-color: var(--warn-line); background: var(--warn-tint); color: var(--warn); }
+	.recipeBadge[data-tone='danger'] { border-color: var(--crit-line); background: var(--crit-tint); color: var(--crit); }
+	.recipeToolbar { display: flex; align-items: end; gap: var(--space-4); flex-wrap: wrap; }
+	.recipeField { display: grid; gap: var(--space-2); min-inline-size: 180px; }
+	.recipeField label, .recipeField legend { color: var(--ink-2); font-size: var(--text-11-5); font-weight: var(--weight-medium); }
+	.recipeField input, .recipeField select, .recipeField textarea, .recipeSelect {
+		min-block-size: var(--control-md);
+		padding: var(--space-3) var(--space-4);
+		border: 1px solid var(--line-strong);
+		border-radius: var(--radius-2);
+		background: var(--surface-sunk);
+		color: var(--ink);
+		font: inherit;
+		font-size: var(--text-12-5);
+	}
+	.recipeField textarea { min-block-size: 120px; resize: vertical; }
+	.recipeField input:focus-visible, .recipeField select:focus-visible, .recipeField textarea:focus-visible, .recipeSelect:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+	.recipeForm { display: grid; gap: var(--space-5); }
+	.recipeFormActions { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+	.recipeChoice { display: flex; align-items: center; gap: var(--space-3); color: var(--ink-2); font-size: var(--text-12); }
+	.recipeChoice input { accent-color: var(--accent); }
+	.recipeStatus { min-block-size: 1.5em; }
+	.recipeList { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+	.recipeListButton { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-4); inline-size: 100%; padding: var(--space-4) var(--space-5); border: 1px solid transparent; border-radius: var(--radius-2); background: transparent; color: var(--ink); text-align: start; cursor: pointer; }
+	.recipeListButton:hover { background: var(--surface-hover); }
+	.recipeListButton[data-selected] { border-color: var(--accent-line); background: var(--accent-tint); }
+	.recipeListMeta { color: var(--ink-3); font-family: var(--font-mono); font-size: var(--text-10); }
+	.recipeListHost { grid-column: 1 / -1; color: var(--ink-3); font-size: var(--text-11-5); }
+	.recipeCode { margin: 0; padding: var(--space-5); overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-2); background: var(--surface-panel-2); color: var(--ink-2); font-family: var(--font-mono); font-size: var(--text-10); line-height: var(--leading-body); }
+	.recipeSteps { display: grid; gap: var(--space-3); margin: 0; padding-inline-start: 1.4em; color: var(--ink-2); font-size: var(--text-12-5); line-height: var(--leading-body); }
+	.recipeResult { display: grid; gap: var(--space-3); min-block-size: 80px; }
+	.recipeResultList { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+	.recipeResultItem { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); padding-block-end: var(--space-3); border-block-end: 1px solid var(--line); }
+	.recipeResultItem:last-child { border-block-end: 0; }
+	.recipeResultItem small { color: var(--ink-3); font-family: var(--font-mono); font-size: var(--text-10); }
+	.recipeDemoGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: var(--space-7); }
+	.recipeChoiceGroup { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+	.recipeChoiceGroup button[data-active] { border-color: var(--accent-line); background: var(--accent-tint); color: var(--accent); }
+	.recipeStats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
+	.recipeStat { display: grid; gap: var(--space-2); padding: var(--space-4); border: 1px solid var(--line); border-radius: var(--radius-2); background: var(--surface-panel-2); }
+	.recipeStatLabel { color: var(--ink-3); font-size: var(--text-10); letter-spacing: var(--tracking-label); text-transform: uppercase; }
+	.recipeStatValue { color: var(--ink); font-size: var(--text-22); font-weight: var(--weight-bold); font-variant-numeric: tabular-nums; }
+	.recipeNotice { padding: var(--space-5); border: 1px solid var(--info-line); border-radius: var(--radius-2); background: var(--info-tint); color: var(--info); font-size: var(--text-12); line-height: var(--leading-body); }
+	.recipeNotice[data-tone='warn'] { border-color: var(--warn-line); background: var(--warn-tint); color: var(--warn); }
+	.recipeNotice[data-tone='danger'] { border-color: var(--crit-line); background: var(--crit-tint); color: var(--crit); }
+	.recipeHidden { display: none !important; }
+
+	@media (max-width: 760px) {
+		.cookbookHeaderInner { align-items: flex-start; flex-wrap: wrap; padding-inline: var(--space-5); }
+		.cookbookNav { inline-size: 100%; justify-content: flex-start; margin-inline-start: 0; overflow-x: auto; flex-wrap: nowrap; }
+		.cookbookMain { padding-inline: var(--space-5); }
+		.pageHeader { align-items: start; flex-direction: column; }
+		.recipeGrid { grid-template-columns: 1fr; }
+	}
+}
+
+@layer screen {
+	.recipeStackTight { gap: var(--space-4); }
+	.recipeAccessRows { display: grid; gap: var(--space-3); }
+	.recipeAccessRows small { display: block; color: var(--ink-3); }
+	.recipeProgress { inline-size: 100%; min-block-size: 10px; }
+	.recipeTableScroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-2); }
+	.recipeTableScroll .displayTable { min-inline-size: 760px; border: 0; }
+	.recipeTableMeta { color: var(--ink-3); font-size: var(--text-10); }
+	.recipeMono, .recipeAction, .recipeCorrelation { font-family: var(--font-mono); font-size: var(--text-10); }
+	.recipeAction { color: var(--ink); }
+	.recipeCorrelation { padding: 0; border: 0; background: transparent; color: var(--accent); cursor: pointer; }
+	.recipeCorrelation:hover { text-decoration: underline; }
+	.recipeChip { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px solid var(--line); border-radius: var(--radius-pill); background: transparent; color: var(--ink-3); font: inherit; font-size: var(--text-11); cursor: pointer; }
+	.recipeChip:hover, .recipeChip[data-on] { border-color: var(--accent-line); background: var(--accent-tint); color: var(--accent); }
+	.recipeChipCount { color: inherit; font-family: var(--font-mono); font-size: var(--text-10); }
+	.recipeLocalized { min-inline-size: 0; }
+	.recipeLocalized .displayCard { overflow: hidden; }
+	.recipeLocalized .displayStatValue { overflow-wrap: anywhere; }
+	.recipeIdentifier { overflow-wrap: anywhere; }
+	.recipeDialog { max-inline-size: min(560px, calc(100vw - 2 * var(--space-5))); inline-size: 100%; padding: var(--space-7); border: 1px solid var(--line-strong); border-radius: var(--radius-3); background: var(--surface-panel); color: var(--ink); }
+	.recipeDialog::backdrop { background: rgb(0 0 0 / 55%); }
+	.recipeDialog h2, .recipeDialog p { margin: 0; }
+	.recipeDialog p { color: var(--ink-2); line-height: var(--leading-body); }
+	.recipeGroupLabel { margin-block-end: var(--space-3); color: var(--ink-4); font-size: var(--text-10); font-weight: var(--weight-strong); letter-spacing: var(--tracking-label); text-transform: uppercase; }
+	.recipeAxisGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: var(--space-5); }
+	.recipeAxis { display: grid; gap: var(--space-3); align-content: start; padding: var(--space-5); border: 1px solid var(--line); border-radius: var(--radius-2); background: var(--surface-panel-2); }
+	.recipeFacts { display: grid; gap: var(--space-5); margin: 0; }
+	.recipeFacts > div { display: grid; gap: var(--space-2); }
+	.recipeFacts dt { color: var(--ink-4); font-size: var(--text-10); font-weight: var(--weight-medium); letter-spacing: var(--tracking-label); text-transform: uppercase; }
+	.recipeFacts dd { margin: 0; color: var(--ink-2); font-size: var(--text-12); overflow-wrap: anywhere; }
+	.recipeFacts small { display: block; margin-block-start: var(--space-1); color: var(--ink-4); font-family: var(--font-sans); font-size: var(--text-10); }
+	.recipeNote { max-inline-size: var(--measure); margin: 0; color: var(--ink-4); font-size: var(--text-11-5); line-height: var(--leading-body); }
+	.recipeChain { display: grid; gap: var(--space-3); margin: 0; padding-inline-start: var(--space-6); }
+	.recipeChain li { display: grid; gap: var(--space-1); }
+	.recipeInlineButton { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
+	.recipeAddress { overflow-wrap: anywhere; font-family: var(--font-mono); }
+	.dashboardSummaryGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: var(--space-5); }
+	.dashboardSummary { display: grid; gap: var(--space-2); min-inline-size: 0; }
+	.dashboardSummaryLabel { color: var(--ink-4); font-size: var(--text-10); font-weight: var(--weight-medium); letter-spacing: var(--tracking-label); text-transform: uppercase; }
+	.dashboardSummaryValue { color: var(--ink); font-size: var(--text-14); overflow-wrap: anywhere; }
+	.dashboardSessionList { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+	.dashboardSession { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding-block: var(--space-3); border-block-end: 1px solid var(--line); }
+	.dashboardSession:last-child { border-block-end: 0; }
+	.dashboardSessionCopy { display: grid; gap: var(--space-1); min-inline-size: 0; }
+	.dashboardSessionId { color: var(--ink-2); font-family: var(--font-mono); font-size: var(--text-10); overflow-wrap: anywhere; }
+	.dashboardSessionTime { color: var(--ink-4); font-size: var(--text-11); }
+	.dashboardDeviceApp { display: grid; gap: var(--space-4); min-block-size: 120px; }
+	.dashboardDeviceActions { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+
+	.astroDashboardGrid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-rows: 40px; gap: 16px; min-inline-size: 0; }
+	.astroDashboardItem { position: relative; min-inline-size: 0; min-block-size: 0; }
+	.astroDashboardCard { display: grid; grid-template-rows: auto minmax(0, 1fr); block-size: 100%; overflow: hidden; }
+	.astroDashboardCardHeader { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); min-block-size: 46px; padding: var(--space-3) var(--space-5); border-block-end: 1px solid var(--line); }
+	.astroDashboardCardTitle { min-inline-size: 0; color: var(--ink-2); font-size: var(--text-12-5); font-weight: var(--weight-medium); }
+	.astroDashboardCardActions { display: flex; align-items: center; gap: var(--space-2); flex: none; }
+	.astroDashboardCardBody { min-block-size: 0; overflow: auto; padding: var(--space-5); }
+	.astroDashboardStat { display: grid; gap: var(--space-2); align-content: center; block-size: 100%; }
+	.astroDashboardStatLabel, .astroDashboardChartLabel { color: var(--ink-3); font-size: var(--text-10); letter-spacing: var(--tracking-label); text-transform: uppercase; }
+	.astroDashboardStatValue { color: var(--ink); font-size: clamp(var(--text-22), 4vw, var(--text-32)); font-weight: var(--weight-bold); font-variant-numeric: tabular-nums; }
+	.astroDashboardStatHint { color: var(--ink-4); font-size: var(--text-11); }
+	.astroDashboardLine { display: grid; grid-template-rows: auto minmax(100px, 1fr) auto; gap: var(--space-3); block-size: 100%; }
+	.astroDashboardLine svg { display: block; inline-size: 100%; block-size: 100%; min-block-size: 100px; overflow: visible; }
+	.astroDashboardLine polyline { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+	.astroDashboardLine .gridLine { stroke: var(--line); stroke-width: 1; }
+	.astroDashboardAxis { display: flex; justify-content: space-between; gap: var(--space-2); color: var(--ink-4); font-family: var(--font-mono); font-size: var(--text-10); }
+	.astroDashboardBars { display: grid; gap: var(--space-4); align-content: center; block-size: 100%; }
+	.astroDashboardBarRow { display: grid; gap: var(--space-2); }
+	.astroDashboardBarMeta { display: flex; justify-content: space-between; gap: var(--space-3); color: var(--ink-2); font-size: var(--text-11); }
+	.astroDashboardBarTrack { block-size: 8px; overflow: hidden; border-radius: var(--radius-pill); background: var(--surface-hover); }
+	.astroDashboardBarFill { block-size: 100%; border-radius: inherit; background: var(--accent); }
+	.astroDashboardNote { display: grid; gap: var(--space-3); align-content: center; block-size: 100%; color: var(--ink-2); font-size: var(--text-13); line-height: var(--leading-body); }
+	.astroDashboardResize { position: absolute; inset-block-end: 3px; inset-inline-end: 3px; inline-size: 24px; block-size: 24px; border: 0; background: transparent; color: var(--ink-4); cursor: nwse-resize; touch-action: none; }
+	.astroDashboardResize::after { content: '◢'; }
+	.astroDashboardDrag { cursor: grab; touch-action: none; }
+	.astroDashboardDrag:active { cursor: grabbing; }
+	.astroDashboardArrange { min-block-size: 28px; padding: var(--space-2) var(--space-3); border: 1px solid var(--line-strong); border-radius: var(--radius-1); background: var(--surface-sunk); color: var(--ink-2); font: inherit; font-size: var(--text-10); }
+	.astroDashboardEmpty { display: grid; place-items: center; min-block-size: 220px; padding: var(--space-7); border: 1px dashed var(--line-strong); border-radius: var(--radius-2); color: var(--ink-3); text-align: center; }
+	.astroDashboardHint { margin: 0; color: var(--ink-4); font-size: var(--text-11); line-height: var(--leading-body); }
+	.astroDashboardAnnouncement { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+	.editableDashboardControls { display: flex; align-items: end; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap; }
+	.editableDashboardControlsMain, .editableDashboardControlsActions { display: flex; align-items: end; gap: var(--space-3); flex-wrap: wrap; }
+	.editableDashboardControlsActions { align-items: center; }
+	.editableDashboardStatus { min-block-size: 1.5em; }
+
+	@media (max-width: 640px) {
+		.astroDashboardGrid { display: grid; grid-template-columns: 1fr; grid-auto-rows: auto; gap: var(--space-5); }
+		.astroDashboardItem { grid-column: auto !important; grid-row: auto !important; min-block-size: 180px; }
+		.astroDashboardResize { display: none; }
+		.astroDashboardHint[data-desktop-only] { display: none; }
+	}
+}
