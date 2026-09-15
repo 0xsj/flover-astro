@@ -1,0 +1,26 @@
+@layer primitive {
+	.chromeSegmented {
+		display: inline-flex;
+		gap: var(--space-1);
+		padding: var(--space-1);
+		background: var(--surface-sunk);
+		border: 1px solid var(--line);
+		border-radius: var(--radius-2);
+	}
+	.chromeSegmentedItem {
+		height: var(--control-sm);
+		padding-inline: var(--space-5);
+		border-radius: var(--radius-1);
+		font-size: var(--text-11);
+		font-weight: var(--weight-medium);
+		color: var(--ink-3);
+		white-space: nowrap;
+		transition: color var(--dur-1) var(--ease), background var(--dur-1) var(--ease);
+	}
+	.chromeSegmentedItem:hover { color: var(--ink); background: var(--surface-hover); }
+	.chromeSegmentedItem:focus-visible { outline: 2px solid var(--fill); outline-offset: 2px; }
+	.chromeSegmentedItem[data-state='checked'] { color: var(--fill-ink); background: var(--fill); }
+	.chromeMark { margin: 0; font-weight: var(--weight-bold); }
+	.chromeMarkInline { font-size: var(--text-12-5); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--accent); }
+	.chromeMarkDisplay { font-size: clamp(var(--text-30), min(9vw, 13vh), 88px); letter-spacing: -0.04em; line-height: 1; color: var(--ink); }
+}

@@ -61,6 +61,18 @@ export const CATALOG = [
 		description: 'Deterministic graph layouts, semantic edges, hulls, presets, and keyboard selection.'
 	},
 	{
+		id: 'patterns',
+		label: 'Page patterns',
+		group: 'Compositions',
+		description: 'Page headers, collection toolbars, selection cards, and composed screen recipes.'
+	},
+	{
+		id: 'chrome',
+		label: 'Preferences',
+		group: 'Runtime',
+		description: 'Theme, density, segmented choices, and the shared application mark.'
+	},
+	{
 		id: 'feedback',
 		label: 'Feedback',
 		group: 'Primitives',

@@ -20,20 +20,6 @@
 	.controls { margin-inline-start: auto; display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; justify-content: flex-end; }
 	.navLink { color: var(--ink-3); font-size: var(--text-11-5); padding: var(--space-2) var(--space-4); border-radius: var(--radius-1); }
 	.navLink:hover { background: var(--surface-hover); color: var(--ink); }
-	.themebar { display: flex; align-items: center; gap: 1px; flex-wrap: wrap; }
-	.themebar button {
-		border: 1px solid transparent;
-		border-radius: var(--radius-1);
-		background: transparent;
-		color: var(--ink-4);
-		font: inherit;
-		font-size: var(--text-10);
-		padding: var(--space-2) var(--space-3);
-		cursor: pointer;
-	}
-	.themebar button:hover { color: var(--ink); background: var(--surface-hover); }
-	.themebar button[aria-pressed='true'] { color: var(--ink); background: var(--surface-hover); border-color: var(--line-strong); }
-	.preferenceDivider { inline-size: 1px; block-size: 18px; background: var(--line-strong); margin-inline: var(--space-2); }
 	.skipLink { position: fixed; inset-block-start: -100px; inset-inline-start: var(--space-6); z-index: var(--z-palette); padding: var(--space-4); background: var(--surface-panel); color: var(--ink); }
 	.skipLink:focus { inset-block-start: var(--space-4); }
 

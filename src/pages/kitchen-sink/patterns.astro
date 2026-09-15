@@ -1,0 +1,89 @@
+---
+import { Badge, Card, CardBody, CardTitle, Panel, Stat } from '../../components/display';
+import { Button, Input } from '../../components/forms';
+import { CollectionToolbar, PageHeader, SelectionCard } from '../../components/patterns';
+import { Box, Flex } from '../../components/layout';
+import Case from '../../components/kitchen-sink/Case.astro';
+import Section from '../../components/kitchen-sink/Section.astro';
+import SectionLabel from '../../components/typography/SectionLabel.astro';
+import Text from '../../components/typography/Text.astro';
+import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
+import pageHeaderSource from '../../components/patterns/PageHeader.astro?raw';
+import selectionCardSource from '../../components/patterns/SelectionCard.astro?raw';
+
+const views = [
+	{ value: 'board', label: 'Board', description: 'Organize work by stage.', detail: 'Best for active projects.' },
+	{ value: 'list', label: 'List', description: 'Scan and compare structured records.', detail: 'Best for shared collections.' },
+	{ value: 'timeline', label: 'Timeline', description: 'Unavailable in this example.', detail: 'Coming later.', disabled: true }
+];
+const filters = ['All projects', 'Owned by me', 'Recently updated'];
+---
+
+<KitchenSinkLayout title="Page patterns · flover-astro" description="Reusable page compositions built from the design-system primitives.">
+	<Section
+		id="patterns"
+		title="Page patterns"
+		blurb="Common arrangements built from the same primitives. Their slots carry content and controls; each application supplies its routing, state, and permissions."
+	>
+		<Case title="Page header" note="identity, context, and actions; the heading level is explicit" source={['src/components/patterns/PageHeader.astro', 'src/styles/patterns.css']}>
+			<PageHeader level={3} title="Northstar workspace" description="A shared place for projects, people, and the work between them.">
+				<SectionLabel slot="leading">Workspace / overview</SectionLabel>
+				<Button slot="actions" href="/kitchen-sink" intent="primary">Explore projects</Button>
+			</PageHeader>
+			<PageHeader level={3} title="A quiet header" description="The same composition with only a title and supporting copy." />
+			<pre slot="source" class="code"><code>{pageHeaderSource}</code></pre>
+		</Case>
+
+		<Case title="Collection toolbar" note="controls, summary, and actions wrap independently">
+			<CollectionToolbar summary="8 projects in this workspace">
+				<Text as="span" weight="strong">Workspace projects</Text>
+				<Badge glyph="●" tone="accent">All systems ready</Badge>
+				<Button slot="actions" size="sm" href="/kitchen-sink/display">Open table examples</Button>
+			</CollectionToolbar>
+			<div class="row">
+				{filters.map((filter, index) => <Button size="sm" intent={index === 0 ? 'secondary' : 'ghost'} aria-pressed={index === 0}>{filter}</Button>)}
+				<Input aria-label="Search projects" placeholder="Search projects" class="selectWidth" />
+			</div>
+		</Case>
+
+		<Case title="Selection cards" note="radio choices, independent checkboxes, and a disabled option" source={['src/components/patterns/SelectionCard.astro', 'src/styles/patterns.css']}>
+			<div class="patternCardGrid" data-pattern-selection>
+				<div class="patternCardGroup">
+					<Text size="sm" weight="strong">Choose a workspace view</Text>
+					{views.map((view, index) => <SelectionCard mode="single" name="workspace-view" value={view.value} label={view.label} description={view.description} disabled={view.disabled} checked={index === 0}>
+						<Text size="sm" tone="muted">{view.detail}</Text>
+					</SelectionCard>)}
+				</div>
+				<div class="patternCardGroup">
+					<Text size="sm" weight="strong">Visible sections</Text>
+					<SelectionCard mode="multiple" name="sections" value="activity" label="Activity" description="Recent changes and project updates." checked><Text size="sm" tone="muted">Included in the overview.</Text></SelectionCard>
+					<SelectionCard mode="multiple" name="sections" value="reports" label="Reports" description="Progress summaries and comparisons."><Text size="sm" tone="muted">Optional detail.</Text></SelectionCard>
+					<SelectionCard mode="multiple" name="sections" value="automation" label="Automation" description="Unavailable in this example." disabled />
+				</div>
+			</div>
+			<Text size="sm" tone="muted" data-pattern-selection-status>Choose a card to inspect its native control state.</Text>
+			<pre slot="source" class="code"><code>{selectionCardSource}</code></pre>
+		</Case>
+
+		<Case title="Composed detail recipe" note="a page header, summary metrics, and caller-owned detail surface">
+			<PageHeader level={3} title="Atlas" description="A detail view assembled from small, reusable pieces.">
+				<SectionLabel slot="leading">Project / Atlas</SectionLabel>
+				<Badge slot="actions" glyph="●" tone="accent">Active</Badge>
+			</PageHeader>
+			<div class="patternStatRow"><Stat label="Members" value={8} /><Stat label="Open tasks" value={0} hint="measured, none outstanding" /><Stat label="Storage" hint="not measured yet" /></div>
+			<Panel title="Project details"><dl class="patternDetails"><div><dt>Owner</dt><dd>Ada Lovelace</dd></div><div><dt>Visibility</dt><dd>Workspace members</dd></div><div><dt>Description</dt><dd>Shared infrastructure and tools for the next release.</dd></div></dl></Panel>
+		</Case>
+
+		<Card><CardBody><CardTitle level={2}>Composition boundary</CardTitle><p class="limits">Patterns arrange primitives but do not fetch, route, or invent permissions. Their slots stay open for the calling screen’s data and actions.</p></CardBody></Card>
+	</Section>
+</KitchenSinkLayout>
+
+<script>
+	const selection = document.querySelector('[data-pattern-selection]');
+	const status = document.querySelector('[data-pattern-selection-status]');
+	selection?.addEventListener('astro-selection-card-change', (event) => {
+		if (!(status instanceof HTMLElement)) return;
+		const detail = event.detail;
+		status.textContent = detail?.mode === 'radio' ? `View ${detail.value} selected.` : `${detail?.value ?? 'Section'} ${detail?.checked ? 'included' : 'excluded'}.`;
+	});
+</script>

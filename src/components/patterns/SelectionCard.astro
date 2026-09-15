@@ -1,0 +1,64 @@
+---
+import '../../styles/patterns.css';
+import { Card, CardBody, CardHeader } from '../display';
+
+interface Props {
+	mode: 'single' | 'multiple';
+	label: string;
+	value: string;
+	description?: string;
+	name?: string;
+	checked?: boolean;
+	defaultChecked?: boolean;
+	disabled?: boolean;
+	id?: string;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { mode, label, value, description, name, checked, defaultChecked = false, disabled = false, id: suppliedId, class: className, ...rest } = Astro.props;
+const slug = value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'option';
+const id = suppliedId ?? `selection-card-${mode}-${slug}`;
+const labelId = `${id}-label`;
+const descriptionId = description ? `${id}-description` : undefined;
+const isChecked = checked ?? defaultChecked;
+const inputName = name ?? (mode === 'single' ? 'selection-card' : undefined);
+---
+
+<Card {...rest} as="div" class:list={['patternSelectionCard', className]} data-disabled={disabled ? '' : undefined} data-selection-card data-mode={mode}>
+	<CardHeader>
+		<div class="patternSelectionCardCopy">
+			<label id={labelId} for={id} class="patternSelectionCardLabel">{label}</label>
+			{description && <p id={descriptionId} class="patternSelectionCardDescription">{description}</p>}
+		</div>
+		<input
+			slot="actions"
+			id={id}
+			type={mode === 'single' ? 'radio' : 'checkbox'}
+			name={inputName}
+			value={value}
+			checked={isChecked}
+			disabled={disabled}
+			class={mode === 'single' ? 'radio' : 'checkbox'}
+			aria-labelledby={labelId}
+			aria-describedby={descriptionId}
+			data-selection-control
+			data-state={isChecked ? 'checked' : 'unchecked'}
+		/>
+	</CardHeader>
+	{Astro.slots.has('default') && <CardBody><slot /></CardBody>}
+</Card>
+
+<script>
+	document.querySelectorAll<HTMLElement>('[data-selection-card]').forEach((card) => {
+		const control = card.querySelector<HTMLInputElement>('[data-selection-control]');
+		if (!control || card.dataset.selectionBound) return;
+		card.dataset.selectionBound = 'true';
+		const sync = () => {
+			control.dataset.state = control.checked ? 'checked' : 'unchecked';
+			card.dispatchEvent(new CustomEvent('astro-selection-card-change', { bubbles: true, detail: { value: control.value, checked: control.checked, mode: control.type } }));
+		};
+		control.addEventListener('change', sync);
+		sync();
+	});
+</script>

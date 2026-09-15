@@ -1,0 +1,22 @@
+---
+import '../../styles/patterns.css';
+
+interface Props {
+	summary?: string;
+	actions?: string;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { summary, actions, class: className, ...rest } = Astro.props;
+const hasSummary = summary !== undefined || Astro.slots.has('summary');
+const hasActions = actions !== undefined || Astro.slots.has('actions');
+---
+
+<div {...rest} class:list={['collectionToolbar', className]}>
+	<div class="collectionToolbarControls"><slot /></div>
+	<div class="collectionToolbarTrailing">
+		{hasSummary && <div class="collectionToolbarSummary">{summary}<slot name="summary" /></div>}
+		{hasActions && <div class="collectionToolbarActions">{actions}<slot name="actions" /></div>}
+	</div>
+</div>

@@ -1,0 +1,37 @@
+---
+import Segmented from './Segmented.astro';
+import { THEMES, theme } from '../../lib/runtime';
+
+const labels = { system: 'System', light: 'Light', dark: 'Dark' } as const;
+const options = THEMES.map((value) => ({ value, label: labels[value] }));
+---
+
+<Segmented label="Theme" value={theme.get()} {options} preference="theme" data-astro-theme-toggle />
+
+<script>
+	import { hydrateTheme, theme, THEMES } from '../../lib/runtime';
+
+	document.querySelectorAll<HTMLElement>('[data-astro-theme-toggle]').forEach((root) => {
+		if (root.dataset.themeToggleBound) return;
+		root.dataset.themeToggleBound = 'true';
+		hydrateTheme();
+		const sync = () => {
+			const value = theme.get();
+			root.dataset.value = value;
+			root.querySelectorAll<HTMLElement>('[role="radio"]').forEach((item) => {
+				const active = item.dataset.value === value;
+				item.setAttribute('aria-checked', String(active));
+				item.tabIndex = active ? 0 : -1;
+				item.dataset.state = active ? 'checked' : 'unchecked';
+			});
+		};
+		sync();
+		root.dispatchEvent(new CustomEvent('astro-segmented-sync', { detail: { value: theme.get() } }));
+		root.addEventListener('astro-segmented-change', (event) => {
+			const value = event.detail?.value;
+			if (typeof value === 'string' && THEMES.includes(value as (typeof THEMES)[number])) theme.set(value as (typeof THEMES)[number]);
+			sync();
+			root.dispatchEvent(new CustomEvent('astro-segmented-sync', { detail: { value: theme.get() } }));
+		});
+	});
+</script>

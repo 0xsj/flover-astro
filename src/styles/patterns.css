@@ -1,0 +1,29 @@
+@layer composition {
+	.patternPageHeader { display: grid; gap: var(--space-6); }
+	.patternPageHeaderRow { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: var(--space-7); }
+	.patternPageHeaderCopy { display: grid; gap: var(--space-4); flex: 1 1 240px; min-inline-size: 0; }
+	.patternPageHeaderLeading { min-inline-size: 0; }
+	.patternPageHeaderActions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
+	.collectionToolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-6); }
+	.collectionToolbarControls { display: flex; align-items: center; flex: 1 1 240px; min-inline-size: 0; flex-wrap: wrap; gap: var(--space-4); }
+	.collectionToolbarTrailing, .collectionToolbarActions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-4); }
+	.collectionToolbarSummary { color: var(--ink-3); font-size: var(--text-11-5); font-variant-numeric: tabular-nums; }
+	.patternSelectionCard { background: var(--surface-panel); }
+	.patternSelectionCardCopy { display: grid; gap: var(--space-2); flex: 1 1 160px; min-inline-size: 0; }
+	.patternSelectionCardLabel { position: relative; z-index: 1; color: var(--ink); font-size: var(--text-13); font-weight: var(--weight-strong); cursor: pointer; }
+	.patternSelectionCardLabel::after { content: ''; position: absolute; inset: 0; border-radius: var(--radius-3); }
+	.patternSelectionCardDescription { position: relative; z-index: 1; margin: 0; color: var(--ink-3); font-size: var(--text-12-5); line-height: var(--leading-body); }
+	.patternSelectionCard:has([data-state='checked']) { border-color: var(--accent); background: var(--accent-tint); }
+	.patternSelectionCard:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: 3px; }
+	.patternSelectionCard:not(:has(:disabled)):hover { border-color: var(--accent); }
+	.patternSelectionCard:has(:disabled) .patternSelectionCardLabel { cursor: not-allowed; }
+	.patternCardGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: var(--space-8); }
+	.patternCardGroup { display: grid; align-content: start; gap: var(--space-4); min-inline-size: 0; }
+	.patternStatRow { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-6); }
+	.patternDetails { margin: 0; }
+	.patternDetails > div { display: grid; grid-template-columns: minmax(110px, 1fr) minmax(0, 2fr); gap: var(--space-7); padding-block: var(--space-5); border-block-end: 1px solid var(--line); font-size: var(--text-12-5); }
+	.patternDetails > div:last-child { border-block-end: 0; }
+	.patternDetails dt { color: var(--ink-3); }
+	.patternDetails dd { margin: 0; color: var(--ink); }
+	@media (max-width: 480px) { .patternDetails > div { grid-template-columns: 1fr; gap: var(--space-2); } }
+}

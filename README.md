@@ -20,8 +20,10 @@ The chart family is included as well: pure scales and encodings, semantic chart
 framing, legends, ordinary metric charts, statistical marks, deterministic
 graph/network layouts, reusable presets, and matching kitchen-sink pages. The
 auth UI, most application routes, the shared locale layer, and most verification
-tooling have not been ported yet. The README must remain explicit about that
-state.
+tooling have not been ported yet. Runtime chrome now consumes the browser
+preference layer through native segmented controls and the Astro wordmark. The
+page-pattern layer now includes headers, collection toolbars, selection cards,
+and composed screen recipes. The README must remain explicit about that state.
 
 ## Start
 

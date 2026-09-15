@@ -1,20 +1,30 @@
 ---
+import '../../styles/patterns.css';
 import Heading from '../typography/Heading.astro';
 import Text from '../typography/Text.astro';
 
 interface Props {
 	title: string;
 	description?: string;
+	leading?: string;
+	actions?: string;
+	level?: 1 | 2 | 3 | 4 | 5 | 6;
 	class?: string;
+	[key: string]: unknown;
 }
 
-const { title, description, class: className, ...rest } = Astro.props;
+const { title, description, leading, actions, level = 1, class: className, ...rest } = Astro.props;
+const hasLeading = leading !== undefined || Astro.slots.has('leading');
+const hasActions = actions !== undefined || Astro.slots.has('actions');
 ---
 
-<header {...rest} class:list={['pageHeader', className]}>
-	<div class="pageHeaderCopy">
-		<Heading level={1} size="lg">{title}</Heading>
-		{description && <Text size="lg" tone="muted" class="pageHeaderDescription">{description}</Text>}
+<header {...rest} class:list={['patternPageHeader', className]}>
+	{hasLeading && <div class="patternPageHeaderLeading">{leading}<slot name="leading" /></div>}
+	<div class="patternPageHeaderRow">
+		<div class="patternPageHeaderCopy">
+			<Heading {level} size="lg">{title}</Heading>
+			{description && <Text tone="muted" measure>{description}</Text>}
+		</div>
+		{hasActions && <div class="patternPageHeaderActions">{actions}<slot name="actions" /></div>}
 	</div>
-	<div class="pageHeaderActions"><slot name="actions" /></div>
 </header>

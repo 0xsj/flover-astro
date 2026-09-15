@@ -1,0 +1,37 @@
+---
+import Segmented from './Segmented.astro';
+import { DENSITIES, density } from '../../lib/runtime';
+
+const labels = { comfortable: 'Comfortable', compact: 'Compact' } as const;
+const options = DENSITIES.map((value) => ({ value, label: labels[value] }));
+---
+
+<Segmented label="Density" value={density.get()} {options} preference="density" data-astro-density-toggle />
+
+<script>
+	import { density, DENSITIES, hydrateDensity } from '../../lib/runtime';
+
+	document.querySelectorAll<HTMLElement>('[data-astro-density-toggle]').forEach((root) => {
+		if (root.dataset.densityToggleBound) return;
+		root.dataset.densityToggleBound = 'true';
+		hydrateDensity();
+		const sync = () => {
+			const value = density.get();
+			root.dataset.value = value;
+			root.querySelectorAll<HTMLElement>('[role="radio"]').forEach((item) => {
+				const active = item.dataset.value === value;
+				item.setAttribute('aria-checked', String(active));
+				item.tabIndex = active ? 0 : -1;
+				item.dataset.state = active ? 'checked' : 'unchecked';
+			});
+		};
+		sync();
+		root.dispatchEvent(new CustomEvent('astro-segmented-sync', { detail: { value: density.get() } }));
+		root.addEventListener('astro-segmented-change', (event) => {
+			const value = event.detail?.value;
+			if (typeof value === 'string' && DENSITIES.includes(value as (typeof DENSITIES)[number])) density.set(value as (typeof DENSITIES)[number]);
+			sync();
+			root.dispatchEvent(new CustomEvent('astro-segmented-sync', { detail: { value: density.get() } }));
+		});
+	});
+</script>

@@ -2,6 +2,7 @@
 import BaseLayout from './BaseLayout.astro';
 import '../styles/kitchen-sink.css';
 import { CATALOG, CATALOG_GROUPS } from '../lib/kitchen-sink/catalog';
+import { DensityToggle, Mark, ThemeToggle } from '../components/chrome';
 
 interface Props {
 	title: string;
@@ -17,18 +18,12 @@ const pathname = Astro.url.pathname.replace(/\/$/, '') || '/';
 		<a href="#gallery-main" class="skipLink">Skip to examples</a>
 		<header class="header">
 			<div class="headerInner">
-				<a href="/kitchen-sink" class="wordmark" aria-label="Flover Astro kitchen sink">flover-astro</a>
+				<a href="/kitchen-sink" class="wordmark" aria-label="Flover Astro kitchen sink"><Mark /></a>
 				<span class="headerLabel">Component catalog</span>
 				<div class="controls">
 					<a href="/" class="navLink">Home</a>
-					<div class="themebar" aria-label="Display preferences">
-						<button type="button" data-theme-choice="system" aria-pressed="true">System</button>
-						<button type="button" data-theme-choice="light" aria-pressed="false">Light</button>
-						<button type="button" data-theme-choice="dark" aria-pressed="false">Dark</button>
-						<span class="preferenceDivider" aria-hidden="true"></span>
-						<button type="button" data-density-choice="comfortable" aria-pressed="true">Comfortable</button>
-						<button type="button" data-density-choice="compact" aria-pressed="false">Compact</button>
-					</div>
+					<ThemeToggle />
+					<DensityToggle />
 				</div>
 			</div>
 		</header>
@@ -80,9 +75,6 @@ const pathname = Astro.url.pathname.replace(/\/$/, '') || '/';
 </BaseLayout>
 
 <script>
-	import { bindRuntimePreferences } from '../lib/runtime/browser';
-	bindRuntimePreferences();
-
 	const toggle = document.querySelector('[data-catalog-toggle]');
 	const navigation = document.querySelector('[data-catalog-nav]');
 	const closeCatalog = () => {

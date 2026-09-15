@@ -1,0 +1,69 @@
+---
+import { DensityToggle, Mark, MARK, Segmented, ThemeToggle } from '../../components/chrome';
+import { Button, Input } from '../../components/forms';
+import { Box, Flex } from '../../components/layout';
+import { Card, CardBody, CardTitle } from '../../components/display';
+import Case from '../../components/kitchen-sink/Case.astro';
+import Section from '../../components/kitchen-sink/Section.astro';
+import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
+import { RUNTIME_BOOT_SCRIPT } from '../../lib/runtime';
+import chromeSource from '../../components/chrome/Segmented.astro?raw';
+import markSource from '../../components/chrome/Mark.astro?raw';
+
+const demoOptions = [
+	{ value: 'board', label: 'Board' },
+	{ value: 'list', label: 'List' },
+	{ value: 'timeline', label: 'Timeline' }
+];
+---
+
+<KitchenSinkLayout title="Chrome · flover-astro" description="Runtime preference controls and the shared product mark.">
+	<Section
+		id="chrome"
+		title="Chrome"
+		blurb="The shell around a screen, and the only group that renders state no server has an opinion about. These controls consume the browser-owned runtime preferences and the shared Astro wordmark."
+	>
+		<Case title="ThemeToggle" note="three states, and system is one of them">
+			<div class="row"><span class="rowLabel">control</span><ThemeToggle /></div>
+			<p class="limits"><strong>Three, not two.</strong> Following the operating system is a choice rather than the absence of one. <code>system</code> removes <code>data-theme</code> so the semantic token media query takes over.</p>
+			<p class="limits">The control is a named <code>radiogroup</code>, not three independent buttons with <code>aria-pressed</code>. It gives keyboard users one stop and one checked answer from three choices.</p>
+		</Case>
+
+		<Case title="DensityToggle" note="a token override, and this page is where it shows">
+			<div class="row"><span class="rowLabel">control</span><DensityToggle /></div>
+			<div class="row"><span class="rowLabel">what moves</span><Flex gap={4} align="center" wrap><Button size="sm">Small</Button><Button>Medium</Button><Input placeholder="Control height" class="selectWidth" /></Flex></div>
+			<p class="limits">Compact density redefines shared control-height tokens under <code>[data-density="compact"]</code>. Components that read those tokens follow without receiving a density prop.</p>
+		</Case>
+
+		<Case title="Segmented" note="one named choice with roving keyboard focus">
+			<div data-segmented-demo>
+				<Segmented label="View" value="board" options={demoOptions} />
+				<p class="limits" data-segmented-demo-status>Board is selected.</p>
+			</div>
+			<p class="limits">Arrow keys move and commit the checked option, while Enter and Space re-commit the focused choice. The group carries the name; each option carries its own checked state.</p>
+			<pre slot="source" class="code"><code>{chromeSource}</code></pre>
+		</Case>
+
+		<Case title="Mark" note="the element is the caller's fact; the spelling is not">
+			<div class="row"><span class="rowLabel">inline</span><Mark /></div>
+			<div class="row"><span class="rowLabel">display</span><Box><Mark as="h2" size="display" /></Box></div>
+			<p class="limits">On a landing page the wordmark is the page heading; beside navigation it is a lockup. The caller chooses the element while <code>{MARK}</code> is spelled once.</p>
+			<pre slot="source" class="code"><code>{markSource}</code></pre>
+		</Case>
+
+		<Case title="The first-paint boundary" note="the flash is not fixable inside a component">
+			<p class="limits">The controls hydrate after the document is painted. The blocking inline script runs first and applies stored theme and density attributes before the bundle, avoiding a visible preference jump.</p>
+			<pre class="code"><code>{RUNTIME_BOOT_SCRIPT}</code></pre>
+		</Case>
+
+		<Card><CardBody><CardTitle level={2}>Port boundary</CardTitle><p class="limits">The Astro controls stay server-renderable and use native browser bindings. Runtime state remains in <code>src/lib/runtime</code>; chrome only presents and updates it.</p></CardBody></Card>
+	</Section>
+</KitchenSinkLayout>
+
+<script>
+	const demo = document.querySelector('[data-segmented-demo]');
+	const status = demo?.querySelector('[data-segmented-demo-status]');
+	demo?.addEventListener('astro-segmented-change', (event) => {
+		if (status instanceof HTMLElement) status.textContent = `${event.detail?.value ?? 'No'} is selected.`;
+	});
+</script>

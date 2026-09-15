@@ -1,0 +1,19 @@
+---
+import '../../styles/chrome.css';
+import { MARK } from './mark';
+
+type MarkSize = 'inline' | 'display';
+type MarkElement = 'span' | 'h1' | 'h2';
+
+interface Props {
+	size?: MarkSize;
+	as?: MarkElement;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { size = 'inline', as: element = 'span', class: className, ...rest } = Astro.props;
+const Tag = element;
+---
+
+<Tag {...rest} class:list={['chromeMark', `chromeMark${size[0].toUpperCase()}${size.slice(1)}`, className]}>{MARK}</Tag>

@@ -1,0 +1,92 @@
+---
+import '../../styles/chrome.css';
+
+export type SegmentedOption = { value: string; label: string };
+
+interface Props {
+	label: string;
+	value: string;
+	options: readonly SegmentedOption[];
+	/** Adds the runtime's existing data contract to each option when needed. */
+	preference?: 'theme' | 'density';
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { label, value, options, preference, class: className, ...rest } = Astro.props;
+const initialValue = options.some((option) => option.value === value) ? value : options[0]?.value ?? '';
+---
+
+<div {...rest} class:list={['chromeSegmented', className]} data-astro-segmented data-value={initialValue} role="radiogroup" aria-label={label}>
+	{options.map((option) => {
+		const checked = option.value === initialValue;
+		return <button
+			type="button"
+			class="chromeSegmentedItem"
+			role="radio"
+			aria-checked={checked}
+			tabindex={checked ? 0 : -1}
+			data-value={option.value}
+			data-state={checked ? 'checked' : 'unchecked'}
+			data-theme-choice={preference === 'theme' ? option.value : undefined}
+			data-density-choice={preference === 'density' ? option.value : undefined}
+		>{option.label}</button>;
+	})}
+</div>
+
+<script>
+	document.querySelectorAll<HTMLElement>('[data-astro-segmented]').forEach((root) => {
+		if (root.dataset.segmentedBound) return;
+		root.dataset.segmentedBound = 'true';
+		const items = [...root.querySelectorAll<HTMLButtonElement>('[role="radio"]')];
+		const enabled = () => items.filter((item) => !item.disabled);
+		let current = root.dataset.value ?? enabled()[0]?.dataset.value ?? '';
+		const sync = (next: string | undefined, focus = false) => {
+			if (!next) return;
+			current = next;
+			root.dataset.value = next;
+			items.forEach((item) => {
+				const checked = item.dataset.value === next;
+				item.setAttribute('aria-checked', String(checked));
+				item.tabIndex = checked ? 0 : -1;
+				item.dataset.state = checked ? 'checked' : 'unchecked';
+				if (focus && checked) item.focus();
+			});
+		};
+		const commit = (next: string | undefined, focus = false) => {
+			if (!next) return;
+			sync(next, focus);
+			root.dispatchEvent(new CustomEvent('astro-segmented-change', { bubbles: true, detail: { value: next } }));
+		};
+		const move = (delta: number) => {
+			const choices = enabled();
+			if (!choices.length) return;
+			const index = Math.max(0, choices.findIndex((item) => item.dataset.value === current));
+			const next = choices[(index + delta + choices.length) % choices.length];
+			if (next) commit(next.dataset.value, true);
+		};
+		root.addEventListener('astro-segmented-sync', (event) => sync(event.detail?.value));
+		items.forEach((item) => {
+			item.addEventListener('click', () => commit(item.dataset.value));
+			item.addEventListener('keydown', (event) => {
+				if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+					event.preventDefault();
+					move(1);
+				} else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+					event.preventDefault();
+					move(-1);
+				} else if (event.key === 'Home') {
+					event.preventDefault();
+					commit(enabled()[0]?.dataset.value, true);
+				} else if (event.key === 'End') {
+					event.preventDefault();
+					commit(enabled().at(-1)?.dataset.value, true);
+				} else if (event.key === 'Enter' || event.key === ' ') {
+					event.preventDefault();
+					commit(item.dataset.value);
+				}
+			});
+		});
+		sync(current);
+	});
+</script>
