@@ -1,29 +1,31 @@
 # flover-astro
 
-An in-progress Astro port of the Flover starter series. It will carry the
+An Astro port of the Flover starter series. It carries the
 architecture and behavior of [`flover-next`](../flover-next/) and
 [`flover-svelte`](../flover-svelte/) into an Astro-specific implementation.
 
-This directory is being ported incrementally. The current state is the Astro
-starter with server output, the Node adapter, the global token/cascade layer,
+The feature port is complete. The current state is the Astro starter with
+server output, the Node adapter, the global token/cascade layer,
 the kernel, HTTP, diagnostics, chaos, composition root, server boundary, and
 the session, ledger, example, access, and jobs service contracts. It also now
-has validated storage, URL-state, runtime state machines, a native browser
-preference binding, isolated cookbook composition roots, and native Astro
-recipe pages for item workflows, session recovery, resilience, access, jobs,
-activity, localization, chaos, diagnostics, failures, and URL state. The
-public cookbook manual and Markdown download are included as well. The
-server-rendered dashboard and editable dashboard are now included too: the
-former uses an isolated service-backed demo account until auth UI is ported,
-and the latter persists a validated layout through the browser document layer.
-The chart family is included as well: pure scales and encodings, semantic chart
+has validated storage, URL-state, runtime state machines, locale formatting,
+query invalidation, realtime sources, a native browser preference binding,
+isolated cookbook composition roots, and native Astro recipe pages for item
+workflows, session recovery, resilience, access, jobs, activity, localization,
+chaos, diagnostics, failures, URL state, canvas, and live updates. The public
+cookbook manual and Markdown download are included as well. The dashboard and
+editable dashboard are included with validated browser-document persistence.
+The chart family is included too: pure scales and encodings, semantic chart
 framing, legends, ordinary metric charts, statistical marks, deterministic
 graph/network layouts, reusable presets, and matching kitchen-sink pages. The
-auth UI, most application routes, the shared locale layer, and most verification
-tooling have not been ported yet. Runtime chrome now consumes the browser
-preference layer through native segmented controls and the Astro wordmark. The
-page-pattern layer now includes headers, collection toolbars, selection cards,
-and composed screen recipes. The README must remain explicit about that state.
+auth UI, protected `/app` workspace, all cards/tables/workspaces/data
+kitchen-sink pages, and native shell previews are included. Verification is
+still recorded as build and route smoke evidence rather than a claim of full
+cross-browser parity. Runtime chrome now consumes the browser preference layer
+through native segmented controls and the Astro wordmark. The page-pattern
+layer includes headers, collection toolbars, selection cards, and composed
+screen recipes. Page-level shells include standard, rail, contextual,
+navigation, and authentication frames.
 
 ## Start
 
@@ -39,9 +41,10 @@ yarn install
 yarn dev
 ```
 
-The current starter exposes the landing page, kitchen sink routes, and the
-first session/activity API endpoints. The background-server form used during
-longer work is:
+The current starter exposes the landing page, the complete kitchen-sink
+catalog, cookbook/manual routes, auth routes, a protected `/app` canvas, and
+session/activity API endpoints. The background-server form used during longer
+work is:
 
 ```sh
 yarn astro dev --background
@@ -58,9 +61,12 @@ yarn preview
 yarn astro -- --help
 ```
 
-`astro check`, unit tests, architecture checks, browser checks, and resilience
-mutations will be added with the layers they verify. A command is not listed as
-available until it actually exists in this project.
+`yarn run check` is available through `@astrojs/check` and TypeScript 6. The current
+port still reports legacy diagnostics in earlier inline scripts and components,
+so it is a diagnostic command rather than a clean gate yet. Unit tests,
+architecture checks, browser checks, and resilience mutations remain follow-up
+tooling; the passing evidence is the production build plus local route/auth
+smoke checks.
 
 ## Port target
 

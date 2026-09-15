@@ -1,0 +1,57 @@
+---
+import { Button, Field, Input } from '../components/forms';
+import { AuthShell } from '../components/shells';
+import Text from '../components/typography/Text.astro';
+
+const rawReturnTo = Astro.url.searchParams.get('returnTo') ?? '/app';
+const returnTo = rawReturnTo.startsWith('/') && !rawReturnTo.startsWith('//') ? rawReturnTo : '/app';
+const initialError = Astro.url.searchParams.get('error') ?? '';
+const initialEmailError = Astro.url.searchParams.get('field_email') ?? '';
+const initialPasswordError = Astro.url.searchParams.get('field_password') ?? '';
+---
+
+<AuthShell title="Welcome back" description="Sign in to continue to your workspace.">
+	<form class="authForm" data-auth-form data-return-to={returnTo} action="/api/auth/sign-in" method="post">
+		<input type="hidden" name="returnTo" value={returnTo} />
+		<div class="authNotice" data-auth-error role="alert" hidden={!initialError}>{initialError}</div>
+		<Field label="Email" controlId="sign-in-email" required><Input id="sign-in-email" name="email" type="email" autocomplete="email" required aria-invalid={initialEmailError ? 'true' : undefined} aria-describedby={initialEmailError ? 'sign-in-email-error' : undefined} /><p id="sign-in-email-error" class="fieldError" data-auth-field-error="email" hidden={!initialEmailError}>{initialEmailError}</p></Field>
+		<Field label="Password" controlId="sign-in-password" required><Input id="sign-in-password" name="password" type="password" autocomplete="current-password" required aria-invalid={initialPasswordError ? 'true' : undefined} aria-describedby={initialPasswordError ? 'sign-in-password-error' : undefined} /><p id="sign-in-password-error" class="fieldError" data-auth-field-error="password" hidden={!initialPasswordError}>{initialPasswordError}</p></Field>
+		<Button type="submit" intent="primary">Sign in</Button>
+	</form>
+	<div slot="footer"><Text size="sm" tone="muted">New here? <a href={`/sign-up?returnTo=${encodeURIComponent(returnTo)}`}>Create an account</a>.</Text><Text size="sm" tone="quiet">Demo: ada@example.com · password</Text></div>
+</AuthShell>
+
+<script>
+	const form = document.querySelector<HTMLFormElement>('[data-auth-form]');
+	if (form) {
+		const error = form.querySelector<HTMLElement>('[data-auth-error]');
+		const clearFieldErrors = () => {
+			form.querySelectorAll<HTMLElement>('[data-auth-field-error]').forEach((node) => { node.hidden = true; node.textContent = ''; });
+			form.querySelectorAll<HTMLElement>('[aria-invalid]').forEach((node) => node.removeAttribute('aria-invalid'));
+		};
+		const showPayload = (payload: Record<string, unknown>) => {
+			if (error) { error.hidden = false; error.textContent = typeof payload.message === 'string' ? payload.message : 'Sign in could not be completed.'; }
+			if (!payload.fields || typeof payload.fields !== 'object') return;
+			for (const [name, message] of Object.entries(payload.fields as Record<string, unknown>)) {
+				if (typeof message !== 'string') continue;
+				const field = form.querySelector<HTMLElement>(`[data-auth-field-error="${CSS.escape(name)}"]`);
+				const input = form.querySelector<HTMLElement>(`[name="${CSS.escape(name)}"]`);
+				if (field) { field.hidden = false; field.textContent = message; }
+				input?.setAttribute('aria-invalid', 'true');
+			}
+		};
+		form.addEventListener('submit', async (event) => {
+			event.preventDefault();
+			if (error) { error.hidden = true; error.textContent = ''; }
+			clearFieldErrors();
+			const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+			if (button) button.disabled = true;
+			try {
+				const response = await fetch(form.action, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(form))) });
+				if (!response.ok) { const payload = await response.json().catch(() => ({})) as Record<string, unknown>; showPayload(payload); return; }
+				window.location.assign(form.dataset.returnTo ?? '/app');
+			} catch { if (error) { error.hidden = false; error.textContent = 'The sign-in service is unavailable. Try again.'; } }
+			finally { if (button) button.disabled = false; }
+		});
+	}
+</script>

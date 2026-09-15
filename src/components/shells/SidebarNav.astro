@@ -1,0 +1,30 @@
+---
+import '../../styles/shells.css';
+import NavLink from '../navigation/NavLink.astro';
+import type { NavGroup } from './types';
+
+interface Props {
+	groups: readonly NavGroup[];
+	current?: string;
+	label?: string;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { groups, current, label = 'Sections', class: className, ...rest } = Astro.props;
+const isCurrent = (href: string, exact: boolean | undefined) => {
+	if (!current) return false;
+	if (exact) return href === current;
+	return href === current || (href !== '/' && current.startsWith(`${href}/`));
+};
+---
+
+<nav {...rest} aria-label={label} class:list={['shellSidebarNav', className]}>
+	{groups.map((group, index) => <div class="shellSidebarGroup">
+		{group.label && <div class="shellSidebarGroupLabel">{group.label}</div>}
+		{group.items.map((item) => <NavLink href={item.href} active={isCurrent(item.href, item.exact)} class="shellSidebarItem">
+			{item.icon && <span class="shellNavIcon" aria-hidden="true">{item.icon}</span>}
+			{item.label}
+		</NavLink>)}
+	</div>)}
+</nav>

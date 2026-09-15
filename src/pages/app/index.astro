@@ -1,0 +1,28 @@
+---
+import { Badge, Card, CardBody, CardDescription, CardHeader, CardTitle, Stat } from '../../components/display';
+import { Button } from '../../components/forms';
+import { ContextSidebar, NavigationRail, RailLink, RailShell, SidebarNav } from '../../components/shells';
+import Mark from '../../components/chrome/Mark.astro';
+import PageHeader from '../../components/patterns/PageHeader.astro';
+import Text from '../../components/typography/Text.astro';
+import { currentSession } from '../../lib/server/root';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const session = await currentSession(Astro);
+if (session.state !== 'found') return Astro.redirect(`/sign-in?returnTo=${encodeURIComponent('/app')}`);
+const user = session.value;
+const groups = [{ items: [{ href: '/app', label: 'Home', icon: '▦', exact: true }] }, { label: 'Reference', items: [{ href: '/kitchen-sink', label: 'Components', icon: '✦' }, { href: '/cookbook', label: 'Cookbook', icon: '◌' }] }] as const;
+---
+
+<BaseLayout title="Home · flover-astro" description="The protected Flover application canvas.">
+	<RailShell sidebarLabel="Application navigation">
+		<NavigationRail slot="rail" label="Flover areas"><a slot="brand" class="appRailBrand" href="/" aria-label="Flover home"><Mark /></a><RailLink href="/app" label="Your app" description="Workspace home" active><span aria-hidden="true">▦</span></RailLink><RailLink href="/cookbook" label="Cookbook" description="Working examples"><span aria-hidden="true">◌</span></RailLink><RailLink href="/kitchen-sink" label="Components" description="Component catalog"><span aria-hidden="true">✦</span></RailLink></NavigationRail>
+		<ContextSidebar slot="sidebar" title="Your app" description="Space for your next product." footer="Flover workspace"><SidebarNav groups={groups} current="/app" label="Application pages" /></ContextSidebar>
+		<div slot="header" class="appHeader"><Text size="sm" tone="muted">Your app</Text><span aria-hidden="true">/</span><Text size="sm">Home</Text><div class="appHeaderActions"><Badge tone="accent">Signed in as {user.name}</Badge><form action="/sign-out" method="post" data-sign-out><Button type="submit" size="sm">Sign out</Button></form></div></div>
+		<div class="appPage"><PageHeader title={`Welcome back, ${user.name}`} description="This is a fresh application canvas. Product screens can grow from the same server-owned identity and shell boundaries."><Button slot="actions" href="/cookbook" intent="secondary">Browse cookbook</Button></PageHeader><div class="appSummaryGrid"><Card><CardHeader><CardTitle level={2}>Start here</CardTitle><CardDescription>A small, intentional surface.</CardDescription></CardHeader><CardBody><Text size="sm">Replace this canvas with your product's first real workflow. Keep data reads and writes at their service boundaries.</Text></CardBody></Card><Card><CardBody><Stat label="Signed-in account" value={user.email} hint="Session identity came from the HttpOnly cookie." /></CardBody></Card></div></div>
+	</RailShell>
+</BaseLayout>
+
+<script>
+	document.querySelectorAll<HTMLFormElement>('[data-sign-out]').forEach((form) => form.addEventListener('submit', async (event) => { event.preventDefault(); await fetch(form.action, { method: 'POST' }); window.location.assign('/'); }));
+</script>

@@ -43,6 +43,18 @@ export const CATALOG = [
 		description: 'Panels, stats, badges, avatars, and structured details.'
 	},
 	{
+		id: 'cards',
+		label: 'Cards',
+		group: 'Compositions',
+		description: 'Records, metrics, settings, selectable choices, and media.'
+	},
+	{
+		id: 'tables',
+		label: 'Tables',
+		group: 'Compositions',
+		description: 'Semantic tables with filtering, sorting, selection, and paging.'
+	},
+	{
 		id: 'charts',
 		label: 'Charts',
 		group: 'Primitives',
@@ -67,10 +79,28 @@ export const CATALOG = [
 		description: 'Page headers, collection toolbars, selection cards, and composed screen recipes.'
 	},
 	{
+		id: 'shells',
+		label: 'Shells',
+		group: 'Compositions',
+		description: 'Standard and rail layouts, contextual sidebars, navigation, and authentication frames.'
+	},
+	{
+		id: 'workspaces',
+		label: 'Interactive workspaces',
+		group: 'Compositions',
+		description: 'Editable dashboards and freeform canvases with keyboard alternatives.'
+	},
+	{
 		id: 'chrome',
 		label: 'Preferences',
 		group: 'Runtime',
 		description: 'Theme, density, segmented choices, and the shared application mark.'
+	},
+	{
+		id: 'data',
+		label: 'Data & failures',
+		group: 'Runtime',
+		description: 'Failure values, validation, loading, absence, and chaos boundaries.'
 	},
 	{
 		id: 'feedback',

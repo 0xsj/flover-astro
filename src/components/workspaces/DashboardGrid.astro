@@ -1,0 +1,145 @@
+---
+import { Card } from '../display';
+import type { DashboardLayout } from '../../lib/workspaces/dashboard-grid';
+
+export type DashboardGridWidget = {
+	id: string;
+	title: string;
+	label: string;
+	value?: string;
+	hint?: string;
+	body?: string;
+};
+
+interface Props {
+	label: string;
+	widgets: readonly DashboardGridWidget[];
+	layout: DashboardLayout;
+	editable?: boolean;
+	empty?: string;
+	class?: string;
+}
+
+const { label, widgets, layout, editable = false, empty = 'No widgets yet. Add one to start arranging this dashboard.', class: className, ...rest } = Astro.props;
+const widgetById = new Map(widgets.map((widget) => [widget.id, widget]));
+---
+
+<div {...rest} class:list={['workspaceDashboard', className]} role="region" aria-label={label} data-astro-dashboard-grid data-layout={JSON.stringify(layout)} data-editable={editable ? '' : undefined}>
+	<span class="workspaceAnnouncement" data-dashboard-announcement role="status" aria-live="polite"></span>
+	{layout.length ? layout.map((item) => {
+		const widget = widgetById.get(item.id);
+		if (!widget) return null;
+		return (
+			<div class="workspaceDashboardItem" data-dashboard-item={item.id} style={`--dashboard-column: ${item.x + 1} / span ${item.width}; --dashboard-row: ${item.y + 1} / span ${item.height};`}>
+				<Card class="workspaceDashboardCard">
+					<header class="workspaceDashboardHeader">
+						<strong class:list={['workspaceDashboardTitle', editable && 'workspaceDashboardDrag']} data-dashboard-drag={editable ? item.id : undefined}>{widget.title}</strong>
+						{editable && <details class="workspaceArrange"><summary aria-label={`Arrange ${widget.title}`}>Arrange</summary><div class="workspaceArrangeMenu">
+							{(['left', 'right', 'up', 'down', 'wider', 'narrower', 'taller', 'shorter'] as const).map((action) => <button type="button" data-dashboard-action={action} data-dashboard-id={item.id}>{action === 'left' ? 'Move left' : action === 'right' ? 'Move right' : action === 'up' ? 'Move up' : action === 'down' ? 'Move down' : action === 'wider' ? 'Make wider' : action === 'narrower' ? 'Make narrower' : action === 'taller' ? 'Make taller' : 'Make shorter'}</button>)}
+							<button type="button" data-dashboard-remove={item.id}>Remove</button>
+						</div></details>}
+						{editable && <button type="button" class="workspaceDashboardResize" data-dashboard-resize={item.id} aria-label={`Resize ${widget.title}`}>↘</button>}
+					</header>
+					<div class="workspaceDashboardBody">
+						{widget.value ? <><span class="workspaceDashboardLabel">{widget.label}</span><strong class="workspaceDashboardValue">{widget.value}</strong>{widget.hint && <span class="workspaceDashboardHint">{widget.hint}</span>}</> : <><span class="workspaceDashboardLabel">{widget.label}</span><p>{widget.body ?? 'The caller supplies this widget content.'}</p></>}
+					</div>
+				</Card>
+			</div>
+		);
+	}) : <div class="workspaceDashboardEmpty">{empty}</div>}
+</div>
+
+{editable && <script>
+	import { decodeDashboardLayout, editDashboardLayout, GRID, type DashboardLayout, type GridEdit, type GridItem } from '../../lib/workspaces/dashboard-grid';
+
+	type Point = { x: number; y: number };
+	type Gesture = { mode: 'move' | 'resize'; id: string; start: Point; base: DashboardLayout };
+
+	for (const root of document.querySelectorAll<HTMLElement>('[data-astro-dashboard-grid][data-editable]')) {
+		let current: DashboardLayout = JSON.parse(root.dataset.layout ?? '[]') as DashboardLayout;
+		let gesture: Gesture | undefined;
+		const announce = (message: string) => {
+			const node = root.querySelector('[data-dashboard-announcement]');
+			if (node) node.textContent = message;
+		};
+		const render = (next: DashboardLayout) => {
+			current = next;
+			root.dataset.layout = JSON.stringify(next);
+			for (const item of next) {
+				const node = root.querySelector<HTMLElement>(`[data-dashboard-item="${CSS.escape(item.id)}"]`);
+				if (!node) continue;
+				node.style.setProperty('--dashboard-column', `${item.x + 1} / span ${item.width}`);
+				node.style.setProperty('--dashboard-row', `${item.y + 1} / span ${item.height}`);
+			}
+		};
+		const apply = (next: DashboardLayout, message: string) => {
+			if (next === current || JSON.stringify(next) === JSON.stringify(current)) {
+				announce('That arrangement would leave the dashboard bounds or overlap another widget.');
+				return;
+			}
+			render(next);
+			announce(message);
+		};
+		const itemOf = (layout: DashboardLayout, id: string): GridItem | undefined => layout.find((item) => item.id === id);
+		const valid = (candidate: DashboardLayout): DashboardLayout | undefined => {
+			const result = decodeDashboardLayout(candidate);
+			return result.ok ? result.value : undefined;
+		};
+		const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
+
+		root.addEventListener('click', (event) => {
+			const target = event.target;
+			if (!(target instanceof HTMLElement)) return;
+			const action = target.closest<HTMLElement>('[data-dashboard-action]');
+			if (action) {
+				const id = action.dataset.dashboardId;
+				const edit = action.dataset.dashboardAction as GridEdit | undefined;
+				if (id && edit) apply(editDashboardLayout(current, id, edit), 'Dashboard arrangement changed.');
+				return;
+			}
+			const remove = target.closest<HTMLElement>('[data-dashboard-remove]');
+			if (remove) {
+				const id = remove.dataset.dashboardRemove;
+				if (id) apply(current.filter((item) => item.id !== id), 'Widget removed from the dashboard.');
+			}
+		});
+		root.addEventListener('pointerdown', (event) => {
+			if (!(event instanceof PointerEvent) || event.button !== 0) return;
+			const target = event.target;
+			if (!(target instanceof Element)) return;
+			const handle = target.closest<HTMLElement>('[data-dashboard-drag], [data-dashboard-resize]');
+			const id = handle?.dataset.dashboardDrag ?? handle?.dataset.dashboardResize;
+			if (!id || !itemOf(current, id)) return;
+			event.preventDefault();
+			gesture = { mode: handle?.hasAttribute('data-dashboard-resize') ? 'resize' : 'move', id, start: { x: event.clientX, y: event.clientY }, base: current };
+			root.setPointerCapture?.(event.pointerId);
+		});
+		root.addEventListener('pointermove', (event) => {
+			if (!gesture || !(event instanceof PointerEvent)) return;
+			const item = itemOf(gesture.base, gesture.id);
+			if (!item) return;
+			const columnStep = Math.max(1, root.clientWidth / GRID.columns);
+			const rowStep = 56;
+			const dx = Math.round((event.clientX - gesture.start.x) / columnStep);
+			const dy = Math.round((event.clientY - gesture.start.y) / rowStep);
+			const next = { ...item };
+			if (gesture.mode === 'move') {
+				next.x = clamp(item.x + dx, 0, GRID.columns - item.width);
+				next.y = clamp(item.y + dy, 0, GRID.maxRows - item.height);
+			} else {
+				next.width = clamp(item.width + dx, GRID.minWidth, GRID.columns - item.x);
+				next.height = clamp(item.height + dy, GRID.minHeight, GRID.maxHeight);
+			}
+			const candidate = gesture.base.map((entry) => entry.id === gesture?.id ? next : entry);
+			const decoded = valid(candidate);
+			if (decoded) render(decoded);
+		});
+		const endGesture = () => {
+			if (!gesture) return;
+			announce(gesture.mode === 'move' ? 'Dashboard widget moved.' : 'Dashboard widget resized.');
+			gesture = undefined;
+		};
+		root.addEventListener('pointerup', endGesture);
+		root.addEventListener('pointercancel', endGesture);
+	}
+</script>}

@@ -1,0 +1,21 @@
+---
+import { Stat } from '../../components/display';
+import { Button } from '../../components/forms';
+import Case from '../../components/kitchen-sink/Case.astro';
+import Section from '../../components/kitchen-sink/Section.astro';
+import { Canvas, DashboardGrid } from '../../components/workspaces';
+import { DEFAULT_LAYOUT, WIDGETS } from '../../lib/cookbook/dashboard-widgets';
+import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
+const nodes = [{ id: 'brief', label: 'Brief', position: { x: 36, y: 48 } }, { id: 'research', label: 'Research', position: { x: 300, y: 150 } }, { id: 'release', label: 'Release', position: { x: 560, y: 70 } }] as const;
+const edges = [{ id: 'brief-research', source: 'brief', target: 'research' }, { id: 'research-release', source: 'research', target: 'release' }] as const;
+---
+
+<KitchenSinkLayout title="Interactive workspaces · flover-astro" description="Controlled dashboard and canvas surfaces with native browser alternatives.">
+	<Section id="workspaces" title="Interactive workspaces" blurb="The caller supplies content, selection, arrangement, and persistence. Astro keeps the browser-owned interaction explicit in native controls and scripts.">
+		<Case title="Editable dashboard" note="arrange menus preserve keyboard access"><DashboardGrid label="Editable dashboard example" widgets={WIDGETS.slice(0, 4)} layout={DEFAULT_LAYOUT} editable /><p class="limits">Use Arrange on a widget to move or resize it. The same validated layout model is persisted by the editable-dashboard cookbook recipe.</p></Case>
+		<Case title="Read-only dashboard" note="the same composition without editing affordances"><DashboardGrid label="Read-only dashboard example" widgets={WIDGETS.slice(0, 2)} layout={[{ id: 'requests', x: 0, y: 0, width: 6, height: 4 }, { id: 'latency', x: 6, y: 0, width: 6, height: 4 }]} /><div class="row"><Stat label="Arrangement" value="Caller-owned" /></div></Case>
+		<Case title="Freeform canvas" note="selection, pan, zoom, drag, and keyboard positioning"><Canvas label="Interactive canvas example" nodes={nodes} edges={edges} editable /><p class="limits">Select a node, then use the arrow keys or pointer to move it. Drag the empty canvas to pan, use the controls to zoom, and press Escape to clear the selection.</p></Case>
+		<Case title="Empty surfaces" note="no invented nodes or widgets"><div class="fieldGrid"><DashboardGrid label="Empty dashboard" widgets={[]} layout={[]} empty="No widgets are saved on this dashboard." /><Canvas label="Empty canvas" nodes={[]} empty="No items are connected to this canvas." /></div></Case>
+		<Case title="Working recipes" note="persistence and application behavior are composed at the route"><div class="row"><Button href="/cookbook/editable-dashboard" intent="primary">Saved dashboard layouts</Button><Button href="/cookbook/canvas">Canvas with inspector</Button><Button href="/cookbook/live-updates">Live-data subscriptions</Button></div></Case>
+	</Section>
+</KitchenSinkLayout>

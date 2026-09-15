@@ -1,0 +1,51 @@
+---
+import { AppShell, AuthShell, ContextSidebar, NavigationRail, RailLink, RailShell, SidebarNav } from '../../components/shells';
+import { Button, Input } from '../../components/forms';
+import Badge from '../../components/display/Badge.astro';
+import { DensityToggle, Mark, ThemeToggle } from '../../components/chrome';
+import Text from '../../components/typography/Text.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShellContent from './_components/ShellContent.astro';
+
+type Variant = 'standard' | 'rail' | 'auth';
+const variant = Astro.params.variant as Variant;
+const groups = [
+	{ items: [{ href: '/app', label: 'Overview', icon: '▦' }] },
+	{ label: 'Reference', items: [{ href: '/kitchen-sink', label: 'Kitchen sink', icon: '✦' }, { href: '/probe', label: 'Transport probe', icon: '⚙' }] }
+];
+---
+
+{variant === 'standard' && (
+	<AppShell>
+		<div slot="nav"><SidebarNav groups={groups} current="/app" /></div>
+		<div slot="actions" class="shellPreviewActions"><ThemeToggle /><DensityToggle /></div>
+		<ShellContent />
+	</AppShell>
+)}
+{variant === 'rail' && (
+	<RailShell id="preview-rail-shell">
+		<NavigationRail slot="rail">
+			<Mark slot="brand" />
+			<RailLink href="/app" label="Overview" description="Workspace overview" active><span aria-hidden="true">▦</span></RailLink>
+			<RailLink href="/kitchen-sink" label="Kitchen sink" description="Component catalog"><span aria-hidden="true">✦</span></RailLink>
+			<RailLink href="/probe" label="Transport probe" description="Service transport"><span aria-hidden="true">⚙</span></RailLink>
+		</NavigationRail>
+		<ContextSidebar slot="sidebar" title="Northstar" description="Sample workspace" footer="Account: Ada Lovelace"><SidebarNav groups={groups} current="/app" /></ContextSidebar>
+		<div slot="header" class="shellPreviewHeader"><Text as="span" size="sm" tone="muted">Northstar / overview</Text><ThemeToggle /></div>
+		<ShellContent />
+	</RailShell>
+)}
+{variant === 'auth' && (
+	<AuthShell title="Welcome back" description="Sign in to continue to your workspace.">
+		<form class="shellPreviewForm">
+			<label for="preview-email">Email</label>
+			<Input id="preview-email" type="email" placeholder="you@example.com" />
+			<label for="preview-password">Password</label>
+			<Input id="preview-password" type="password" placeholder="••••••••" />
+			<Button type="submit" intent="primary">Sign in</Button>
+		</form>
+		<div slot="footer">Need an account? <a href="/sign-up">Create one</a>.</div>
+	</AuthShell>
+)}
+
+{!['standard', 'rail', 'auth'].includes(variant) && <BaseLayout title="Shell preview"><main class="shellPreviewNotFound"><Badge tone="warn">Unknown preview</Badge><p>No shell variant named “{variant}”.</p></main></BaseLayout>}

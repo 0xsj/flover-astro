@@ -1,0 +1,41 @@
+---
+import { Card, CardBody, CardDescription, CardHeader, CardTitle } from '../../../components/display';
+import { Button } from '../../../components/forms';
+import Container from '../../../components/layout/Container.astro';
+import PageHeader from '../../../components/patterns/PageHeader.astro';
+import Text from '../../../components/typography/Text.astro';
+import { Canvas } from '../../../components/workspaces';
+import CookbookLayout from '../../../layouts/CookbookLayout.astro';
+
+const nodes = [
+	{ id: 'brief', label: 'Brief', position: { x: 36, y: 64 } },
+	{ id: 'research', label: 'Research', position: { x: 300, y: 170 } },
+	{ id: 'release', label: 'Release', position: { x: 560, y: 84 } }
+] as const;
+const edges = [{ id: 'brief-research', source: 'brief', target: 'research' }, { id: 'research-release', source: 'research', target: 'release' }] as const;
+---
+
+<CookbookLayout title="Canvas · Cookbook · flover-astro" description="A controlled native canvas with an inspector and pointer and keyboard movement.">
+	<Container width="page">
+		<PageHeader title="Canvas with an inspector" description="The canvas owns presentation and pointer and keyboard movement. The route owns the selected node and the explanation beside it."><Button slot="actions" href="/kitchen-sink/workspaces" intent="secondary">Workspace examples</Button></PageHeader>
+		<div class="recipeStack" data-canvas-recipe>
+			<Canvas label="Release planning canvas" nodes={nodes} edges={edges} editable />
+			<div class="recipeGrid"><Card><CardHeader><CardTitle level={2}>Inspector</CardTitle><CardDescription>Selection is a route-local browser state.</CardDescription></CardHeader><CardBody><div data-canvas-inspector><Text size="sm" tone="muted">Select a node to inspect it.</Text></div></CardBody></Card><Card><CardHeader><CardTitle level={2}>Interaction path</CardTitle></CardHeader><CardBody><Text size="sm" tone="muted">Focus a node, press an arrow key or drag it to move it, drag the empty canvas to pan, use the zoom controls, or press Escape to clear selection.</Text></CardBody></Card></div>
+		</div>
+	</Container>
+</CookbookLayout>
+
+<script>
+	const app = document.querySelector('[data-canvas-recipe]');
+	const inspector = app?.querySelector<HTMLElement>('[data-canvas-inspector]');
+	app?.querySelector('[data-astro-canvas]')?.addEventListener('click', (event) => {
+		const target = event.target;
+		if (!(target instanceof HTMLElement) || !inspector) return;
+		const node = target.closest<HTMLElement>('[data-canvas-node]');
+		if (!node) return;
+		inspector.textContent = '';
+		const title = document.createElement('strong'); title.textContent = node.getAttribute('aria-label')?.split('. Press')[0] ?? 'Selected item';
+		const copy = document.createElement('p'); copy.className = 'recipeNote'; copy.textContent = 'This node is selected. Its position is controlled by the canvas interaction.';
+		inspector.append(title, copy);
+	});
+</script>

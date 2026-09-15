@@ -1,0 +1,59 @@
+---
+import { Button, Field, Input } from '../components/forms';
+import { AuthShell } from '../components/shells';
+import Text from '../components/typography/Text.astro';
+
+const rawReturnTo = Astro.url.searchParams.get('returnTo') ?? '/app';
+const returnTo = rawReturnTo.startsWith('/') && !rawReturnTo.startsWith('//') ? rawReturnTo : '/app';
+const initialError = Astro.url.searchParams.get('error') ?? '';
+const initialNameError = Astro.url.searchParams.get('field_name') ?? '';
+const initialEmailError = Astro.url.searchParams.get('field_email') ?? '';
+const initialPasswordError = Astro.url.searchParams.get('field_password') ?? '';
+---
+
+<AuthShell title="Create your account" description="Start a workspace with the Flover foundation.">
+	<form class="authForm" data-auth-form data-return-to={returnTo} action="/api/auth/sign-up" method="post">
+		<input type="hidden" name="returnTo" value={returnTo} />
+		<div class="authNotice" data-auth-error role="alert" hidden={!initialError}>{initialError}</div>
+		<Field label="Name" controlId="sign-up-name" required><Input id="sign-up-name" name="name" autocomplete="name" required aria-invalid={initialNameError ? 'true' : undefined} aria-describedby={initialNameError ? 'sign-up-name-error' : undefined} /><p id="sign-up-name-error" class="fieldError" data-auth-field-error="name" hidden={!initialNameError}>{initialNameError}</p></Field>
+		<Field label="Email" controlId="sign-up-email" required><Input id="sign-up-email" name="email" type="email" autocomplete="email" required aria-invalid={initialEmailError ? 'true' : undefined} aria-describedby={initialEmailError ? 'sign-up-email-error' : undefined} /><p id="sign-up-email-error" class="fieldError" data-auth-field-error="email" hidden={!initialEmailError}>{initialEmailError}</p></Field>
+		<Field label="Password" controlId="sign-up-password" hint="Use at least 8 characters." required><Input id="sign-up-password" name="password" type="password" autocomplete="new-password" minlength="8" required aria-invalid={initialPasswordError ? 'true' : undefined} aria-describedby={[initialPasswordError && 'sign-up-password-error', 'sign-up-password-hint'].filter(Boolean).join(' ') || undefined} /><p id="sign-up-password-error" class="fieldError" data-auth-field-error="password" hidden={!initialPasswordError}>{initialPasswordError}</p></Field>
+		<Button type="submit" intent="primary">Create account</Button>
+	</form>
+	<div slot="footer"><Text size="sm" tone="muted">Already have an account? <a href={`/sign-in?returnTo=${encodeURIComponent(returnTo)}`}>Sign in</a>.</Text></div>
+</AuthShell>
+
+<script>
+	const form = document.querySelector<HTMLFormElement>('[data-auth-form]');
+	if (form) {
+		const error = form.querySelector<HTMLElement>('[data-auth-error]');
+		const clearFieldErrors = () => {
+			form.querySelectorAll<HTMLElement>('[data-auth-field-error]').forEach((node) => { node.hidden = true; node.textContent = ''; });
+			form.querySelectorAll<HTMLElement>('[aria-invalid]').forEach((node) => node.removeAttribute('aria-invalid'));
+		};
+		const showPayload = (payload: Record<string, unknown>) => {
+			if (error) { error.hidden = false; error.textContent = typeof payload.message === 'string' ? payload.message : 'Account creation could not be completed.'; }
+			if (!payload.fields || typeof payload.fields !== 'object') return;
+			for (const [name, message] of Object.entries(payload.fields as Record<string, unknown>)) {
+				if (typeof message !== 'string') continue;
+				const field = form.querySelector<HTMLElement>(`[data-auth-field-error="${CSS.escape(name)}"]`);
+				const input = form.querySelector<HTMLElement>(`[name="${CSS.escape(name)}"]`);
+				if (field) { field.hidden = false; field.textContent = message; }
+				input?.setAttribute('aria-invalid', 'true');
+			}
+		};
+		form.addEventListener('submit', async (event) => {
+			event.preventDefault();
+			if (error) { error.hidden = true; error.textContent = ''; }
+			clearFieldErrors();
+			const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+			if (button) button.disabled = true;
+			try {
+				const response = await fetch(form.action, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(form))) });
+				if (!response.ok) { const payload = await response.json().catch(() => ({})) as Record<string, unknown>; showPayload(payload); return; }
+				window.location.assign(form.dataset.returnTo ?? '/app');
+			} catch { if (error) { error.hidden = false; error.textContent = 'The account service is unavailable. Try again.'; } }
+			finally { if (button) button.disabled = false; }
+		});
+	}
+</script>

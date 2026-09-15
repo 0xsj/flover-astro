@@ -1,0 +1,12 @@
+---
+import { Card, CardBody, CardTitle } from '../../../components/display';
+import Heading from '../../../components/typography/Heading.astro';
+import Text from '../../../components/typography/Text.astro';
+---
+
+<div class="shellPreviewContent">
+	<Text size="sm" tone="muted">Workspace / overview</Text>
+	<Heading level={1} size="lg">Northstar workspace</Heading>
+	<Text tone="muted" measure>A small isolated preview keeps its own document and main landmark while showing the shell arrangement around illustrative content.</Text>
+	<div class="shellPreviewCards"><Card><CardBody><CardTitle level={2}>Projects</CardTitle><Text size="sm" tone="muted">8 active records</Text></CardBody></Card><Card><CardBody><CardTitle level={2}>Activity</CardTitle><Text size="sm" tone="muted">3 updates today</Text></CardBody></Card></div>
+</div>

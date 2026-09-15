@@ -1,0 +1,24 @@
+---
+import '../../styles/shells.css';
+import TooltipProvider from '../overlays/TooltipProvider.astro';
+
+interface Props {
+	brand?: string;
+	footer?: string;
+	label?: string;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { brand, footer, label = 'Application sections', class: className, ...rest } = Astro.props;
+const hasBrand = brand !== undefined || Astro.slots.has('brand');
+const hasFooter = footer !== undefined || Astro.slots.has('footer');
+---
+
+<TooltipProvider>
+	<div {...rest} class:list={['shellNavigationRail', className]}>
+		{hasBrand && <div class="shellNavigationRailBrand">{brand}<slot name="brand" /></div>}
+		<nav class="shellNavigationRailItems" aria-label={label}><slot /></nav>
+		{hasFooter && <div class="shellNavigationRailFooter">{footer}<slot name="footer" /></div>}
+	</div>
+</TooltipProvider>

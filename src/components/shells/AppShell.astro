@@ -1,0 +1,26 @@
+---
+import '../../styles/shells.css';
+import Mark from '../chrome/Mark.astro';
+
+interface Props {
+	brand?: string;
+	actions?: string;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { brand, actions, class: className, ...rest } = Astro.props;
+const hasBrand = brand !== undefined || Astro.slots.has('brand');
+const hasActions = actions !== undefined || Astro.slots.has('actions');
+---
+
+<div {...rest} class:list={['shellApp', className]}>
+	<header class="shellAppHeader">
+		{hasBrand ? <div class="shellAppBrand">{brand}<slot name="brand" /></div> : <Mark />}
+		{hasActions && <div class="shellAppActions">{actions}<slot name="actions" /></div>}
+	</header>
+	<div class="shellAppBody">
+		<aside class="shellAppRail" aria-label="Primary navigation"><slot name="nav" /></aside>
+		<main class="shellAppMain"><slot /></main>
+	</div>
+</div>

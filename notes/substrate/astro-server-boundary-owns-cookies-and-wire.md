@@ -19,9 +19,11 @@ Astro uses `APIContext.cookies`, `APIContext.url`, `APIContext.locals`, and
 The session cookie is named `flover_astro_session` so the sibling projects can
 run on the same local origin without sharing credentials.
 
-Sign-in and sign-up are intentionally not JSON API routes yet. Their successful
-service result contains a token, so the future form/action boundary must store
-it through `startSession` without serializing it to the browser.
+Sign-in and sign-up accept both scripted JSON requests and native form
+submissions. Their successful service result contains a token, so this boundary
+stores it through `startSession` without serializing it to the browser. Native
+forms redirect back to the safe return path; scripted clients receive the
+public user value and field failures remain in the shared response envelope.
 
 ## Verification
 

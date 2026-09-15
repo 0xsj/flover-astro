@@ -1,0 +1,49 @@
+---
+import { Card, CardBody, CardDescription, CardHeader, CardTitle, Panel } from '../../../components/display';
+import { Button } from '../../../components/forms';
+import Container from '../../../components/layout/Container.astro';
+import PageHeader from '../../../components/patterns/PageHeader.astro';
+import Text from '../../../components/typography/Text.astro';
+import CookbookLayout from '../../../layouts/CookbookLayout.astro';
+---
+
+<CookbookLayout title="Live updates · Cookbook · flover-astro" description="Connection state, cache invalidation, and resynchronization.">
+	<Container width="page">
+		<PageHeader title="Live-data subscriptions" description="A memory source makes the reconnect and invalidation contract visible without requiring a backend websocket."><Button slot="actions" href="/cookbook" intent="secondary">All recipes</Button></PageHeader>
+		<div class="recipeStack" data-live-demo>
+			<div class="recipeGrid"><Panel title="Connection"><div class="recipeStats"><div class="recipeStat"><span class="recipeStatLabel">State</span><strong class="recipeStatValue" data-live-state>connecting</strong></div><div class="recipeStat"><span class="recipeStatLabel">Events</span><strong class="recipeStatValue" data-live-count>0</strong></div></div><p class="recipeNote" data-live-failure></p></Panel><Card><CardHeader><CardTitle level={2}>Cache boundary</CardTitle><CardDescription>Events invalidate reads, not component identity.</CardDescription></CardHeader><CardBody><Text size="sm" tone="muted" data-live-cache>Waiting for the first update.</Text></CardBody></Card></div>
+			<div class="recipeFormActions"><Button type="button" intent="primary" data-live-publish>Publish update</Button><Button type="button" data-live-disconnect>Disconnect</Button><Button type="button" data-live-reconnect>Reconnect</Button><Button type="button" intent="danger" data-live-reject>Send decode failure</Button></div>
+			<ol class="recipeChain" data-live-log aria-live="polite"></ol>
+		</div>
+	</Container>
+</CookbookLayout>
+
+<script>
+	import { createQueryCache, connectLiveQueries, keys } from '../../../lib/query';
+	import { createMemorySource, type ConnectionState } from '../../../lib/realtime';
+	import { invalid, type Failure } from '../../../lib/kernel';
+
+	const app = document.querySelector<HTMLElement>('[data-live-demo]');
+	if (app) {
+		type LiveEvent = { id: string; scope: string; value: number };
+		const source = createMemorySource<LiveEvent>();
+		const cache = createQueryCache();
+		const key = keys.cookbook.live('browser-demo');
+		let count = 0;
+		const state = app.querySelector<HTMLElement>('[data-live-state]');
+		const events = app.querySelector<HTMLElement>('[data-live-count]');
+		const failure = app.querySelector<HTMLElement>('[data-live-failure]');
+		const cacheStatus = app.querySelector<HTMLElement>('[data-live-cache]');
+		const log = app.querySelector<HTMLOListElement>('[data-live-log]');
+		const showState = (value: ConnectionState) => { if (state) state.textContent = value.state === 'reconnecting' ? `reconnecting · attempt ${value.attempt}` : value.state; };
+		const addLog = (message: string) => { if (!log) return; const item = document.createElement('li'); item.textContent = message; log.prepend(item); while (log.children.length > 5) log.lastElementChild?.remove(); };
+		const bridge = connectLiveQueries({ source, cache, affected: (event) => [keys.cookbook.live(event.scope)], resync: [key], batchMs: 20 });
+		const stopView = source.subscribe({ event(value: LiveEvent) { count += 1; if (events) events.textContent = String(count); if (cacheStatus) cacheStatus.textContent = `Invalidation scheduled for ${value.scope}; latest value ${value.value}.`; addLog(`Received update ${value.id} with value ${value.value}.`); }, state: showState, error(value: Failure) { if (failure) failure.textContent = value.message; addLog(`Update error: ${value.message}`); } });
+		cache.subscribe((value) => { if (JSON.stringify(value) === JSON.stringify(key) && cacheStatus) cacheStatus.textContent = 'Declared read invalidated after connection resync.'; });
+		app.querySelector('[data-live-publish]')?.addEventListener('click', () => source.publish({ id: `evt_${count + 1}`, scope: 'browser-demo', value: 100 + count + 1 }));
+		app.querySelector('[data-live-disconnect]')?.addEventListener('click', () => source.disconnect());
+		app.querySelector('[data-live-reconnect]')?.addEventListener('click', () => source.reconnect());
+		app.querySelector('[data-live-reject]')?.addEventListener('click', () => source.reject(invalid('A live update could not be decoded.', {}, { type: 'socket_message' })));
+		window.addEventListener('pagehide', () => { bridge.stop(); stopView(); });
+	}
+</script>

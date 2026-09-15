@@ -1,0 +1,39 @@
+---
+import { Badge, Card, CardBody, CardDescription, CardFooter, CardHeader, CardLink, CardMedia, CardTitle, Stat } from '../../components/display';
+import { Button } from '../../components/forms';
+import Case from '../../components/kitchen-sink/Case.astro';
+import Section from '../../components/kitchen-sink/Section.astro';
+import { SelectionCard } from '../../components/patterns';
+import Text from '../../components/typography/Text.astro';
+import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
+---
+
+<KitchenSinkLayout title="Cards · flover-astro" description="Composable content cards and stateful card examples.">
+	<Section id="cards" title="Cards" blurb="Self-contained content composed from a small set of parts. The caller chooses the structure, data, and destination.">
+		<Case title="Card anatomy" note="optional parts; content chooses the structure">
+			<div class="displayCardGrid">
+				<Card><CardBody><CardTitle level={3}>A quiet starting point</CardTitle><CardDescription>A title and body are enough. Add sections as the content needs them.</CardDescription></CardBody></Card>
+				<Card><CardHeader><CardTitle level={3}>A little more structure</CardTitle><CardDescription>Context belongs beside the title.</CardDescription><Badge slot="actions" glyph="●" tone="accent">New</Badge></CardHeader><CardBody><Text size="sm">Use the body for details and the footer for supporting information.</Text></CardBody><CardFooter><Text size="sm" tone="muted">Ready to explore</Text><Button size="sm" href="/kitchen-sink/patterns">Continue</Button></CardFooter></Card>
+			</div>
+		</Case>
+		<Case title="Metric cards" note="measured zero and unmeasured values stay distinct">
+			<div class="displayCardGrid">
+				<Card><CardHeader><CardTitle level={3}>Audience</CardTitle><CardDescription>Last seven days</CardDescription></CardHeader><CardBody><Stat label="Active users" value="12,840" hint="12% above the previous period" /></CardBody><CardFooter><Text size="sm" tone="muted">Illustrative daily total</Text></CardFooter></Card>
+				<Card><CardHeader><CardTitle level={3}>Reliability</CardTitle><CardDescription>Current workspace</CardDescription></CardHeader><CardBody><Stat label="Open incidents" value={0} hint="Checked just now; none open." /><Badge tone="accent">All clear</Badge></CardBody></Card>
+				<Card><CardHeader><CardTitle level={3}>Performance</CardTitle><CardDescription>Waiting for the first measurement</CardDescription></CardHeader><CardBody><Stat label="Median response time" hint="Connect a data source to begin measuring." /></CardBody></Card>
+			</div>
+		</Case>
+		<Case title="Media and links" note="a primary destination with independent supporting actions">
+			<div class="displayCardGrid">
+				<Card><CardMedia><svg viewBox="0 0 480 270" role="img" aria-label="Three connected workspace modules"><path class="displayCoverGrid" d="M0 54H480M0 108H480M0 162H480M0 216H480M80 0V270M160 0V270M240 0V270M320 0V270M400 0V270" /><path class="displayCoverLine" d="M160 135H320M240 85V190" /><rect class="displayCoverTile" x="90" y="95" width="100" height="80" rx="8" /><rect class="displayCoverTile" x="290" y="95" width="100" height="80" rx="8" /><rect class="displayCoverCenter" x="190" y="55" width="100" height="80" rx="8" /></svg></CardMedia><CardHeader><CardTitle level={3}><CardLink href="/kitchen-sink/shells">A workspace that grows with you</CardLink></CardTitle><CardDescription>Start with a clear navigation structure, then add the tools your team needs.</CardDescription></CardHeader><CardFooter><Text size="sm" tone="muted">Workspace collection</Text><span aria-hidden="true">↗</span></CardFooter></Card>
+				<Card as="div"><CardHeader><CardTitle level={3}>Content can stand on its own</CardTitle><CardDescription>The same structure works when there is no image.</CardDescription></CardHeader><CardBody><Text size="sm">Keep the content readable and reserve space for the actions that help someone continue.</Text></CardBody><CardFooter><a class="navLink" href="/kitchen-sink/layout">Explore layout primitives</a></CardFooter></Card>
+			</div>
+		</Case>
+		<Case title="Selectable cards" note="radio choices, independent checkboxes, and a disabled option">
+			<div class="fieldGrid"><SelectionCard mode="single" name="card-view" value="overview" label="Overview" description="A compact summary of the workspace." checked /><SelectionCard mode="single" name="card-view" value="activity" label="Activity" description="A chronological view of recent changes." /><SelectionCard mode="multiple" name="card-feature" value="alerts" label="Alerts" description="Keep important changes visible." /><SelectionCard mode="multiple" name="card-feature" value="exports" label="Exports" description="Unavailable for this plan." disabled /></div>
+		</Case>
+		<Case title="Long content" note="wrapping, variable height, and optional sections">
+			<div class="displayCardGrid"><Card><CardHeader><CardTitle level={3}>A shared workspace for research, infrastructure, and the next release</CardTitle><CardDescription>A longer title stays readable in a narrow column.</CardDescription></CardHeader><CardBody><Text size="sm">workspace-with-a-deliberately-unbroken-identifier-that-still-needs-to-fit-its-container</Text></CardBody><CardFooter><Text size="sm" tone="muted">Owned by the platform team</Text></CardFooter></Card><Card><CardBody><CardTitle level={3}>Short and complete</CardTitle><CardDescription>Cards in a grid can have different amounts of content.</CardDescription></CardBody></Card></div>
+		</Case>
+	</Section>
+</KitchenSinkLayout>

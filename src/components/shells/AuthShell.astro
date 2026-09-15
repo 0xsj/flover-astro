@@ -1,0 +1,29 @@
+---
+import '../../styles/shells.css';
+import Mark from '../chrome/Mark.astro';
+
+interface Props {
+	title: string;
+	description?: string;
+	footer?: string;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { title, description, footer, class: className, ...rest } = Astro.props;
+const hasFooter = footer !== undefined || Astro.slots.has('footer');
+---
+
+<main {...rest} class:list={['shellAuthPage', className]}>
+	<div class="shellAuthColumn">
+		<Mark class="shellAuthBrand" />
+		<div class="shellAuthCard">
+			<div class="shellAuthHead">
+				<h1 class="shellAuthTitle">{title}</h1>
+				{description && <p class="shellAuthDescription">{description}</p>}
+			</div>
+			<slot />
+		</div>
+		{hasFooter && <div class="shellAuthFooter">{footer}<slot name="footer" /></div>}
+	</div>
+</main>

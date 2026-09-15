@@ -1,0 +1,33 @@
+---
+import { Alert } from '../../components/feedback';
+import { Button } from '../../components/forms';
+import Case from '../../components/kitchen-sink/Case.astro';
+import Section from '../../components/kitchen-sink/Section.astro';
+import { Empty, Mock, Panel, Presence, SortableTh, Table, TBody, THead, Td, Th, Tr } from '../../components/display';
+import { CollectionToolbar } from '../../components/patterns';
+import SkeletonText from '../../components/feedback/SkeletonText.astro';
+import Text from '../../components/typography/Text.astro';
+import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
+---
+
+<KitchenSinkLayout title="Tables · flover-astro" description="Native semantic tables with caller-owned collection behavior.">
+	<Section id="tables" title="Tables" blurb="Native table elements with composable cells. The caller owns the collection, query, selection, and paging; the table owns semantics and presentation.">
+		<Case title="Collection table" note="filter and sort the same collection">
+			<CollectionToolbar summary="3 projects in this workspace"><Text as="span" weight="strong">Projects</Text><div slot="actions"><label class="tableFilter" for="table-filter">Filter <input id="table-filter" data-table-filter type="search" placeholder="Search projects" /></label></div></CollectionToolbar>
+			<Panel title="Project source coverage" flush><Table caption="Project source coverage" scrollLabel="Project source coverage table"><THead><Tr><SortableTh direction="ascending" sortLabel="Sort by project">Project</SortableTh><Th>Owner</Th><Th numeric>Checks</Th><Th numeric>Open</Th></Tr></THead><TBody data-table-body><Tr data-table-row="Atlas"><Th scope="row">Atlas</Th><Td>Platform</Td><Td numeric>24</Td><Td numeric>0</Td></Tr><Tr data-table-row="Northstar"><Th scope="row">Northstar</Th><Td>Research</Td><Td numeric>18</Td><Td numeric>2</Td></Tr><Tr data-table-row="Wayfinder"><Th scope="row">Wayfinder</Th><Td>Operations</Td><Td numeric>—</Td><Td numeric>—</Td></Tr></TBody></Table></Panel>
+			<p class="limits">A table stays compositional instead of accepting generic rows and columns, so a cell can contain a link, badge, control, or presence value without growing a renderer prop.</p>
+		</Case>
+		<Case title="Cell composition" note="zero, empty, and unmeasured remain different answers">
+			<Panel title="Source coverage"><div class="row"><Mock /><Mock note="Fixture response · not production data" /></div><Table caption="Example measurements"><THead><Tr><Th>Source</Th><Th numeric>Matches</Th><Th>Version</Th></Tr></THead><TBody><Tr><Th scope="row">Primary</Th><Td numeric>12</Td><Td><Presence of={{ state: 'found', value: '1.4.2' }}>1.4.2</Presence></Td></Tr><Tr><Th scope="row">Archive</Th><Td numeric>0</Td><Td><Presence of={{ state: 'empty' }} /></Td></Tr><Tr><Th scope="row">Remote</Th><Td numeric><Presence of={{ state: 'unmeasured' }} /></Td><Td><Presence of={{ state: 'unmeasured' }} /></Td></Tr></TBody></Table></Panel>
+		</Case>
+		<Case title="Collection states" note="loading is temporary; empty and unavailable need their own explanations">
+			<div class="fieldGrid"><Panel title="Loading"><div aria-busy="true" aria-label="Loading projects"><SkeletonText lines={3} /></div><Text size="sm" tone="muted">Loading projects…</Text></Panel><Panel title="Empty"><Empty title="No projects yet" body="Projects will appear here once your workspace has one."><Button slot="action" size="sm">Create project</Button></Empty></Panel><Panel title="Unavailable"><Alert tone="crit" title="Projects could not be loaded">The source did not respond. Existing projects have not been removed.</Alert></Panel></div>
+		</Case>
+	</Section>
+</KitchenSinkLayout>
+
+<script>
+	const filter = document.querySelector<HTMLInputElement>('[data-table-filter]');
+	const rows = [...document.querySelectorAll<HTMLElement>('[data-table-row]')];
+	filter?.addEventListener('input', () => { const query = filter.value.trim().toLowerCase(); for (const row of rows) row.hidden = !row.dataset.tableRow?.toLowerCase().includes(query); });
+</script>

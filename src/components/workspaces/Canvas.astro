@@ -1,0 +1,105 @@
+---
+export type CanvasNode = { id: string; label: string; position: { x: number; y: number } };
+export type CanvasEdge = { id: string; source: string; target: string; label?: string };
+
+interface Props {
+	label: string;
+	nodes: readonly CanvasNode[];
+	edges?: readonly CanvasEdge[];
+	editable?: boolean;
+	empty?: string;
+	class?: string;
+}
+
+const { label, nodes, edges = [], editable = true, empty = 'No items on this canvas.', class: className, ...rest } = Astro.props;
+const nodeMap = new Map(nodes.map((node) => [node.id, node]));
+const validEdges = edges.filter((edge) => nodeMap.has(edge.source) && nodeMap.has(edge.target));
+const point = (id: string) => {
+	const position = nodeMap.get(id)?.position ?? { x: 0, y: 0 };
+	return { x: position.x + 100, y: position.y + 28 };
+};
+---
+
+<div {...rest} class:list={['workspaceCanvas', className]} role="region" aria-label={label} data-astro-canvas data-editable={editable ? '' : undefined}>
+	{nodes.length ? <>
+		<div class="workspaceCanvasViewport" data-canvas-viewport>
+		<svg class="workspaceCanvasEdges" viewBox="0 0 760 360" aria-hidden="true" preserveAspectRatio="none">
+			{validEdges.map((edge) => { const from = point(edge.source); const to = point(edge.target); return <line data-canvas-edge data-canvas-edge-source={edge.source} data-canvas-edge-target={edge.target} x1={from.x} y1={from.y} x2={to.x} y2={to.y} />; })}
+		</svg>
+		<div class="workspaceCanvasNodes">
+			{nodes.map((node) => <button type="button" class="workspaceCanvasNode" data-canvas-node={node.id} style={`--canvas-x: ${node.position.x}px; --canvas-y: ${node.position.y}px;`} aria-label={editable ? `${node.label}. Press arrow keys to move.` : node.label} aria-pressed="false"><strong>{node.label}</strong><span>{node.id}</span></button>)}
+		</div>
+		</div>
+		{editable && <div class="workspaceCanvasControls" aria-label="Canvas controls"><button type="button" data-canvas-zoom="out" aria-label="Zoom out">−</button><span data-canvas-zoom-value>100%</span><button type="button" data-canvas-zoom="in" aria-label="Zoom in">+</button><button type="button" data-canvas-reset>Reset view</button></div>}
+		<span class="workspaceAnnouncement" data-canvas-announcement role="status" aria-live="polite"></span>
+	</> : <div class="workspaceCanvasEmpty">{empty}</div>}
+</div>
+
+<script>
+	const root = document.querySelector<HTMLElement>('[data-astro-canvas]');
+	if (root) {
+		type Point = { x: number; y: number };
+		const viewport = root.querySelector<HTMLElement>('[data-canvas-viewport]');
+		let zoom = 1;
+		let pan = { x: 0, y: 0 };
+		let gesture: { mode: 'node' | 'pan'; node?: HTMLButtonElement; start: Point; base: Point } | undefined;
+		const announce = (message: string) => { const node = root.querySelector('[data-canvas-announcement]'); if (node) node.textContent = message; };
+		const positionOf = (node: HTMLButtonElement): Point => ({ x: Number.parseInt(node.style.getPropertyValue('--canvas-x')) || 0, y: Number.parseInt(node.style.getPropertyValue('--canvas-y')) || 0 });
+		const syncEdges = () => root.querySelectorAll<SVGLineElement>('[data-canvas-edge]').forEach((line) => {
+			const source = root.querySelector<HTMLButtonElement>(`[data-canvas-node="${CSS.escape(line.dataset.canvasEdgeSource ?? '')}"]`);
+			const target = root.querySelector<HTMLButtonElement>(`[data-canvas-node="${CSS.escape(line.dataset.canvasEdgeTarget ?? '')}"]`);
+			if (!source || !target) return;
+			const from = positionOf(source); const to = positionOf(target);
+			line.setAttribute('x1', String(from.x + 100)); line.setAttribute('y1', String(from.y + 28)); line.setAttribute('x2', String(to.x + 100)); line.setAttribute('y2', String(to.y + 28));
+		});
+		const syncView = () => { if (viewport) { viewport.style.setProperty('--canvas-zoom', String(zoom)); viewport.style.setProperty('--canvas-pan-x', `${pan.x}px`); viewport.style.setProperty('--canvas-pan-y', `${pan.y}px`); } const label = root.querySelector('[data-canvas-zoom-value]'); if (label) label.textContent = `${Math.round(zoom * 100)}%`; };
+		root.querySelector('[data-canvas-zoom="in"]')?.addEventListener('click', () => { zoom = Math.min(1.8, zoom + 0.1); syncView(); });
+		root.querySelector('[data-canvas-zoom="out"]')?.addEventListener('click', () => { zoom = Math.max(0.6, zoom - 0.1); syncView(); });
+		root.querySelector('[data-canvas-reset]')?.addEventListener('click', () => { zoom = 1; pan = { x: 0, y: 0 }; syncView(); announce('Canvas view reset.'); });
+		root.addEventListener('click', (event) => {
+			const target = event.target;
+			if (!(target instanceof HTMLElement)) return;
+			const node = target.closest<HTMLButtonElement>('[data-canvas-node]');
+			if (!node) return;
+			root.querySelectorAll('[data-canvas-node]').forEach((entry) => entry.setAttribute('aria-pressed', String(entry === node)));
+			announce(`${node.getAttribute('aria-label')?.split('. Press')[0] ?? 'Canvas item'} selected.`);
+		});
+		root.addEventListener('pointerdown', (event) => {
+			if (!root.dataset.editable || !(event instanceof PointerEvent) || event.button !== 0) return;
+			const target = event.target;
+			if (!(target instanceof HTMLElement)) return;
+			const node = target.closest<HTMLButtonElement>('[data-canvas-node]');
+			if (node) { gesture = { mode: 'node', node, start: { x: event.clientX, y: event.clientY }, base: positionOf(node) }; node.setPointerCapture?.(event.pointerId); return; }
+			if (viewport && (target === viewport || target.closest('[data-canvas-viewport]'))) { gesture = { mode: 'pan', start: { x: event.clientX, y: event.clientY }, base: { ...pan } }; root.setPointerCapture?.(event.pointerId); }
+		});
+		root.addEventListener('pointermove', (event) => {
+			if (!gesture || !(event instanceof PointerEvent)) return;
+			if (gesture.mode === 'node' && gesture.node) { const next = { x: Math.max(8, Math.min(620, gesture.base.x + (event.clientX - gesture.start.x) / zoom)), y: Math.max(8, Math.min(292, gesture.base.y + (event.clientY - gesture.start.y) / zoom)) }; gesture.node.style.setProperty('--canvas-x', `${Math.round(next.x)}px`); gesture.node.style.setProperty('--canvas-y', `${Math.round(next.y)}px`); syncEdges(); }
+			if (gesture.mode === 'pan') { pan = { x: gesture.base.x + event.clientX - gesture.start.x, y: gesture.base.y + event.clientY - gesture.start.y }; syncView(); }
+		});
+		root.addEventListener('pointerup', () => { if (gesture?.mode === 'node') announce('Canvas position changed.'); gesture = undefined; });
+		root.addEventListener('keydown', (event) => {
+			const target = event.target;
+			if (!(target instanceof HTMLButtonElement) || !target.matches('[data-canvas-node]') || !root.dataset.editable) return;
+			const step = 16;
+			const x = Number.parseInt(target.style.getPropertyValue('--canvas-x')) || 0;
+			const y = Number.parseInt(target.style.getPropertyValue('--canvas-y')) || 0;
+			const next = { x, y };
+			if (event.key === 'ArrowLeft') next.x -= step;
+			else if (event.key === 'ArrowRight') next.x += step;
+			else if (event.key === 'ArrowUp') next.y -= step;
+			else if (event.key === 'ArrowDown') next.y += step;
+			else if (event.key === 'Escape') { target.setAttribute('aria-pressed', 'false'); announce('Canvas selection cleared.'); return; }
+			else return;
+			event.preventDefault();
+			next.x = Math.max(8, Math.min(620, next.x));
+			next.y = Math.max(8, Math.min(292, next.y));
+			target.style.setProperty('--canvas-x', `${next.x}px`);
+			target.style.setProperty('--canvas-y', `${next.y}px`);
+			syncEdges();
+			announce(`Canvas item moved to ${next.x}, ${next.y}.`);
+		});
+		syncEdges();
+		syncView();
+	}
+</script>

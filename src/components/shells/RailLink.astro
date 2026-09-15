@@ -1,0 +1,23 @@
+---
+import '../../styles/shells.css';
+import NavLink from '../navigation/NavLink.astro';
+import Tooltip from '../overlays/Tooltip.astro';
+
+interface Props {
+	href: string;
+	label: string;
+	description?: string;
+	active?: boolean;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { href, label, description, active = false, class: className, ...rest } = Astro.props;
+const tooltipId = `rail-link-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'item'}`;
+---
+
+<Tooltip content={description ?? label} side="right" id={tooltipId}>
+	<NavLink {...rest} href={href} active={active} class:list={['shellRailLink', className]} aria-label={label} aria-current={active ? 'true' : undefined}>
+		<slot />
+	</NavLink>
+</Tooltip>

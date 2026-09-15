@@ -20,7 +20,9 @@ const recipes = [
 	{ href: '/cookbook/failures', label: 'Name every failure honestly', category: 'Kernel', icon: '10', description: 'Force each failure kind through the transport boundary and inspect its retry, cause, and caller obligations.' },
 	{ href: '/cookbook/url-state', label: 'Make the view shareable', category: 'Navigation', icon: '11', description: 'Search, filter, sort, paginate, and switch views while the address remains the committed state.' },
 	{ href: '/cookbook/dashboard', label: 'See the account dashboard', category: 'Workspace', icon: '12', description: 'Read the server-side session surface, preserve presence states, and reconcile browser-side session actions.' },
-	{ href: '/cookbook/editable-dashboard', label: 'Arrange the dashboard', category: 'Workspace', icon: '13', description: 'Persist a validated widget layout, edit it with keyboard or pointer controls, and detect changes from another tab.' }
+	{ href: '/cookbook/editable-dashboard', label: 'Arrange the dashboard', category: 'Workspace', icon: '13', description: 'Persist a validated widget layout, edit it with keyboard or pointer controls, and detect changes from another tab.' },
+	{ href: '/cookbook/canvas', label: 'Inspect a canvas', category: 'Workspace', icon: '14', description: 'Select connected nodes, move them with the keyboard, and keep the inspector outside the canvas renderer.' },
+	{ href: '/cookbook/live-updates', label: 'Reconnect live data', category: 'Realtime', icon: '15', description: 'Publish events, disconnect, reconnect, and watch declared cache reads invalidate after a connection opens.' }
 ];
 ---
 
@@ -55,7 +57,7 @@ const recipes = [
 			</div>
 
 			<div class="cookbookFooter">
-				<Text size="sm" tone="muted">The first Astro batch uses an isolated demo account until the auth UI boundary is ported.</Text>
+				<Text size="sm" tone="muted">The Astro port now includes the auth cookie boundary and a real protected application canvas. Cookbook fixtures remain intentionally isolated from product state.</Text>
 				<Text size="sm"><a href="/kitchen-sink">Browse individual components</a></Text>
 			</div>
 		</Flex>

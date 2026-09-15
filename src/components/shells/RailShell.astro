@@ -1,0 +1,53 @@
+---
+import '../../styles/shells.css';
+import Button from '../forms/button/Button.astro';
+
+interface Props {
+	sidebarOpen?: boolean;
+	defaultSidebarOpen?: boolean;
+	sidebarLabel?: string;
+	id?: string;
+	class?: string;
+	[key: string]: unknown;
+}
+
+const { sidebarOpen, defaultSidebarOpen = true, sidebarLabel = 'Section navigation', id = 'rail-shell', class: className, ...rest } = Astro.props;
+const initialOpen = sidebarOpen ?? defaultSidebarOpen;
+const sidebarId = `${id}-sidebar`;
+const contentId = `${id}-content`;
+---
+
+<div {...rest} id={id} class:list={['shellRail', className]} data-astro-rail-shell data-sidebar-open={initialOpen ? '' : undefined}>
+	<div class="shellRailFrame">
+		<a href={`#${contentId}`} class="shellRailSkip">Skip to content</a>
+		<div class="shellRailRail"><slot name="rail" /></div>
+		<aside id={sidebarId} class="shellRailSidebar" aria-label={sidebarLabel} hidden={!initialOpen}><slot name="sidebar" /></aside>
+		<header class="shellRailHeader">
+			<Button intent="ghost" size="icon" data-rail-toggle aria-expanded={initialOpen} aria-controls={sidebarId} aria-label={initialOpen ? 'Hide section navigation' : 'Show section navigation'}>
+				<span aria-hidden="true" data-rail-toggle-icon>{initialOpen ? '‹' : '›'}</span>
+			</Button>
+			<div class="shellRailHeaderContent"><slot name="header" /></div>
+		</header>
+		<main id={contentId} tabindex="-1" class="shellRailMain"><slot /></main>
+	</div>
+</div>
+
+<script>
+	document.querySelectorAll<HTMLElement>('[data-astro-rail-shell]').forEach((root) => {
+		if (root.dataset.railShellBound) return;
+		const frame = root.querySelector<HTMLElement>('.shellRailFrame');
+		const sidebar = root.querySelector<HTMLElement>('.shellRailSidebar');
+		const button = root.querySelector<HTMLButtonElement>('[data-rail-toggle]');
+		const icon = root.querySelector<HTMLElement>('[data-rail-toggle-icon]');
+		if (!frame || !sidebar || !button) return;
+		root.dataset.railShellBound = 'true';
+		const sync = (open: boolean) => {
+			frame.toggleAttribute('data-sidebar-open', open);
+			sidebar.hidden = !open;
+			button.setAttribute('aria-expanded', String(open));
+			button.setAttribute('aria-label', open ? 'Hide section navigation' : 'Show section navigation');
+			if (icon) icon.textContent = open ? '‹' : '›';
+		};
+		button.addEventListener('click', () => sync(Boolean(sidebar.hidden)));
+	});
+</script>

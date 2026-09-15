@@ -25,9 +25,9 @@ global runtime instead of importing a framework environment module.
 
 ## Boundary rule
 
-The future Astro server boundary owns the HttpOnly cookie. A successful service
-result contains the token for that caller to store; the service never assumes
-where storage happens.
+The Astro server boundary owns the HttpOnly cookie. A successful service result
+contains the token for that caller to store; the service never assumes where
+storage happens.
 
 ## Verification
 

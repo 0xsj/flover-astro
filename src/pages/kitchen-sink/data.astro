@@ -1,0 +1,28 @@
+---
+import { Alert, ErrorSurface, Progress, SkeletonText } from '../../components/feedback';
+import { Button, Field, Input } from '../../components/forms';
+import Case from '../../components/kitchen-sink/Case.astro';
+import Section from '../../components/kitchen-sink/Section.astro';
+import { Badge, Panel } from '../../components/display';
+import Text from '../../components/typography/Text.astro';
+import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
+import { invalid, unavailable } from '../../lib/kernel';
+const fieldFailure = invalid('Check the form.', { email: 'Use a valid email address.', name: 'A name is required.' });
+const serviceFailure = unavailable('The example service did not respond.', { correlationId: 'cid_data_demo' });
+---
+
+<KitchenSinkLayout title="Data and failures · flover-astro" description="Failure values, field errors, loading states, and retry boundaries.">
+	<Section id="data" title="Data and failures" blurb="A failure is a value with a closed set of kinds. Screens switch over it deliberately instead of guessing what an empty result means.">
+		<Case title="Failure rendering" note="transport and field failures keep different recovery paths"><div class="fieldGrid"><Panel title="Service failure"><ErrorSurface failure={serviceFailure} /><Button size="sm" data-retry-demo>Retry read</Button></Panel><Panel title="Validation failure"><Alert tone="warn" title={fieldFailure.message}>Email and name are invalid. No request was sent.</Alert><Badge tone="warn">invalid fields</Badge></Panel></div></Case>
+		<Case title="Field errors" note="the form boundary owns mapping fields to controls"><form class="dataDemoForm" data-data-form><Field label="Name" controlId="data-name" error={fieldFailure.fields.name}><Input id="data-name" name="name" /></Field><Field label="Email" controlId="data-email" error={fieldFailure.fields.email}><Input id="data-email" name="email" type="email" aria-invalid="true" /></Field><Button type="submit" intent="primary">Validate example</Button><p class="limits" data-data-form-status role="status"></p></form></Case>
+		<Case title="Loading and absence" note="loading, empty, and unmeasured are not interchangeable"><div class="fieldGrid"><Panel title="Loading"><div aria-busy="true"><SkeletonText lines={3} /></div></Panel><Panel title="Progress"><Progress value={null} label="Waiting for measurement" /><Text size="sm" tone="muted">Indeterminate is not zero.</Text></Panel><Panel title="Empty"><Text size="sm" tone="muted">The service answered successfully with no records.</Text><Badge>empty</Badge></Panel></div></Case>
+		<Case title="Chaos boundary" note="a query plan is interpreted by the root, not by components"><Alert tone="warn" title="Try a real failure plan">Open <a href="/cookbook/chaos?chaos=GET%20%2Fauth%2Fme%3Aunavailable">the chaos recipe</a> to apply an unavailable response to a registered route. The resulting failure keeps its kind, message, and correlation id.</Alert></Case>
+	</Section>
+</KitchenSinkLayout>
+
+<script>
+	const form = document.querySelector<HTMLFormElement>('[data-data-form]');
+	const status = document.querySelector<HTMLElement>('[data-data-form-status]');
+	form?.addEventListener('submit', (event) => { event.preventDefault(); if (status) status.textContent = 'Validation failed before transport. Correct the marked fields and try again.'; });
+	document.querySelector('[data-retry-demo]')?.addEventListener('click', () => { if (status) status.textContent = 'Retry scheduled. The caller decides whether this failure is retryable.'; });
+</script>

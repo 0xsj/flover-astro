@@ -1,0 +1,39 @@
+@layer composition {
+	.workspaceDashboard { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-rows: 40px; gap: 16px; min-inline-size: 0; }
+	.workspaceDashboardItem { position: relative; grid-column: var(--dashboard-column); grid-row: var(--dashboard-row); min-inline-size: 0; min-block-size: 0; }
+	.workspaceDashboardCard { block-size: 100%; overflow: hidden; }
+	.workspaceDashboardHeader { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); min-block-size: 46px; padding: var(--space-3) var(--space-5); border-block-end: 1px solid var(--line); }
+	.workspaceDashboardTitle { color: var(--ink-2); font-size: var(--text-12-5); font-weight: var(--weight-medium); }
+	.workspaceDashboardDrag { cursor: grab; touch-action: none; }
+	.workspaceDashboardDrag:active { cursor: grabbing; }
+	.workspaceDashboardResize { position: absolute; inset-block-end: var(--space-2); inset-inline-end: var(--space-2); z-index: 1; inline-size: 24px; block-size: 24px; padding: 0; border: 0; border-radius: var(--radius-1); background: transparent; color: var(--ink-4); font: inherit; font-size: var(--text-12); line-height: 1; cursor: nwse-resize; }
+	.workspaceDashboardResize:hover { background: var(--surface-hover); color: var(--accent); }
+	.workspaceDashboardBody { display: grid; align-content: center; gap: var(--space-2); block-size: calc(100% - 46px); padding: var(--space-5); }
+	.workspaceDashboardBody p { margin: 0; color: var(--ink-2); font-size: var(--text-12-5); line-height: var(--leading-body); }
+	.workspaceDashboardLabel { color: var(--ink-3); font-size: var(--text-10); letter-spacing: var(--tracking-label); text-transform: uppercase; }
+	.workspaceDashboardValue { color: var(--ink); font-size: clamp(var(--text-22), 4vw, var(--text-32)); font-weight: var(--weight-bold); font-variant-numeric: tabular-nums; }
+	.workspaceDashboardHint { color: var(--ink-4); font-size: var(--text-11); }
+	.workspaceDashboardEmpty, .workspaceCanvasEmpty { display: grid; place-items: center; min-block-size: 220px; padding: var(--space-7); border: 1px dashed var(--line-heavy); border-radius: var(--radius-3); color: var(--ink-3); text-align: center; }
+	.workspaceArrange { position: relative; flex: none; }
+	.workspaceArrange summary { padding: var(--space-2) var(--space-3); border: 1px solid var(--line-strong); border-radius: var(--radius-1); color: var(--ink-3); font-size: var(--text-10); cursor: pointer; list-style: none; }
+	.workspaceArrange summary::-webkit-details-marker { display: none; }
+	.workspaceArrangeMenu { position: absolute; inset-block-start: calc(100% + var(--space-2)); inset-inline-end: 0; z-index: var(--z-palette); display: grid; min-inline-size: 150px; padding: var(--space-2); border: 1px solid var(--line-strong); border-radius: var(--radius-2); background: var(--surface-raised); box-shadow: var(--shadow); }
+	.workspaceArrangeMenu button { padding: var(--space-2) var(--space-3); border: 0; background: transparent; color: var(--ink-2); font: inherit; font-size: var(--text-10); text-align: start; cursor: pointer; }
+	.workspaceArrangeMenu button:hover { background: var(--surface-hover); color: var(--ink); }
+	.workspaceAnnouncement { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+	.workspaceCanvas { position: relative; min-block-size: 360px; overflow: hidden; border: 1px solid var(--line-strong); border-radius: var(--radius-3); background-color: var(--surface-sunk); background-image: radial-gradient(var(--line-heavy) 1px, transparent 1px); background-size: 20px 20px; touch-action: none; }
+	.workspaceCanvasViewport { position: absolute; inset: 0; inline-size: 760px; block-size: 360px; transform: translate(var(--canvas-pan-x, 0px), var(--canvas-pan-y, 0px)) scale(var(--canvas-zoom, 1)); transform-origin: 0 0; }
+	.workspaceCanvasEdges { position: absolute; inset: 0; inline-size: 760px; block-size: 360px; pointer-events: none; }
+	.workspaceCanvasEdges line { stroke: var(--ink-3); stroke-width: 2; stroke-dasharray: 5 4; }
+	.workspaceCanvasNodes { position: absolute; inset: 0; }
+	.workspaceCanvasNode { position: absolute; inset-inline-start: var(--canvas-x); inset-block-start: var(--canvas-y); display: grid; gap: var(--space-2); inline-size: 200px; min-block-size: 56px; padding: var(--space-4); border: 1px solid var(--line-heavy); border-radius: var(--radius-2); background: var(--surface-panel); color: var(--ink); font: inherit; text-align: start; cursor: pointer; transform: translateZ(0); }
+	.workspaceCanvasNode span { color: var(--ink-4); font-family: var(--font-mono); font-size: var(--text-10); }
+	.workspaceCanvasNode:hover, .workspaceCanvasNode[aria-pressed='true'] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+	.workspaceCanvasNode:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+	.workspaceCanvasControls { position: absolute; inset-block-end: var(--space-4); inset-inline-end: var(--space-4); z-index: 1; display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); border: 1px solid var(--line-strong); border-radius: var(--radius-2); background: color-mix(in srgb, var(--surface-panel) 92%, transparent); box-shadow: var(--shadow); }
+	.workspaceCanvasControls button { min-block-size: 28px; padding: var(--space-2) var(--space-3); border: 1px solid var(--line); border-radius: var(--radius-1); background: transparent; color: var(--ink-2); font: inherit; font-size: var(--text-10); cursor: pointer; }
+	.workspaceCanvasControls button:hover { background: var(--surface-hover); color: var(--ink); }
+	.workspaceCanvasControls span { min-inline-size: 42px; color: var(--ink-4); font-family: var(--font-mono); font-size: var(--text-10); text-align: center; }
+	@media (max-width: 640px) { .workspaceDashboard { grid-template-columns: 1fr; grid-auto-rows: auto; gap: var(--space-5); } .workspaceDashboardItem { grid-column: auto; grid-row: auto; min-block-size: 180px; } .workspaceCanvas { min-block-size: 300px; } .workspaceCanvasNode { transform: scale(.82); transform-origin: top left; } }
+}

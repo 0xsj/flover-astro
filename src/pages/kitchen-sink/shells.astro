@@ -1,0 +1,57 @@
+---
+import { AppShell, AuthShell, ContextSidebar, NavigationRail, RailLink, RailShell, SidebarNav, type NavGroup } from '../../components/shells';
+import { Card, CardBody, CardTitle } from '../../components/display';
+import Case from '../../components/kitchen-sink/Case.astro';
+import Section from '../../components/kitchen-sink/Section.astro';
+import Text from '../../components/typography/Text.astro';
+import KitchenSinkLayout from '../../layouts/KitchenSinkLayout.astro';
+import shellSource from '../../components/shells/RailShell.astro?raw';
+import appShellSource from '../../components/shells/AppShell.astro?raw';
+
+const groups: readonly NavGroup[] = [
+	{ items: [{ href: '/app', label: 'Overview', icon: '▦' }] },
+	{ label: 'Reference', items: [{ href: '/kitchen-sink', label: 'Kitchen sink', icon: '✦' }, { href: '/probe', label: 'Transport probe', icon: '⚙' }] }
+];
+---
+
+<KitchenSinkLayout title="Shells · flover-astro" description="Page-level shells with explicit landmarks and caller-owned navigation.">
+	<Section
+		id="shells"
+		title="Shells"
+		blurb="The first group that frames a whole page rather than answering what a control is. Each preview is a separate document so its main landmark and preference binding stay isolated from the catalog page."
+	>
+		<Case title="AppShell" note="header, rail, main — and no opinion about what goes in them" source={['src/components/shells/AppShell.astro', 'src/pages/shell-preview/[variant].astro']}>
+			<div class="shellPreview"><iframe title="Standard application shell preview" src="/shell-preview/standard"></iframe></div>
+			<p class="limits"><code>nav</code>, <code>actions</code>, and <code>brand</code> are slots. The shell owns one header, one navigation region, and one main content surface.</p>
+			<pre slot="source" class="code"><code>{appShellSource}</code></pre>
+		</Case>
+
+		<Case title="RailShell" note="section rail, contextual sidebar, header, and independently scrolling content" source={['src/components/shells/RailShell.astro', 'src/styles/shells.css']}>
+			<div class="shellPreview"><iframe title="Rail application shell preview" src="/shell-preview/rail"></iframe></div>
+			<p class="limits">The icon rail stays available when the contextual sidebar is collapsed. At narrow widths, the sidebar moves below the header and keeps its own disclosure.</p>
+			<pre slot="source" class="code"><code>{shellSource}</code></pre>
+		</Case>
+
+		<Case title="AuthShell" note="one column, one card, and a required heading">
+			<div class="shellPreview"><iframe title="Authentication shell preview" src="/shell-preview/auth"></iframe></div>
+			<p class="limits"><code>title</code> is required and rendered as the page's <code>h1</code>. The shell owns arrangement only; forms and submit behavior remain caller-owned.</p>
+		</Case>
+
+		<Case title="SidebarNav" note="the one shell component that takes navigation data">
+			<div class="shellNavPreview"><SidebarNav {groups} current="/app" /></div>
+			<div class="shellNavPreview"><SidebarNav {groups} current="/kitchen-sink/tokens" /></div>
+			<p class="limits">Matching is by path segment. A nested route keeps its section current, <code>/app</code> does not match <code>/apples</code>, and an exact landing item can stay inactive on child routes.</p>
+		</Case>
+
+		<Case title="Composing the rails" note="NavigationRail, RailLink, and ContextSidebar stay independently reusable">
+			<div class="shellCompositionPreview">
+				<NavigationRail>
+					<RailLink href="/app" label="Overview" description="Workspace overview" active><span aria-hidden="true">▦</span></RailLink>
+					<RailLink href="/kitchen-sink" label="Kitchen sink" description="Component catalog"><span aria-hidden="true">✦</span></RailLink>
+				</NavigationRail>
+				<ContextSidebar title="Northstar" description="Sample workspace"><SidebarNav {groups} current="/app" /></ContextSidebar>
+				<div class="shellCompositionContent"><Text size="sm" tone="muted">Independent content surface</Text><Card><CardBody><CardTitle level={2}>Caller-owned content</CardTitle><Text size="sm" tone="muted">The pieces can be used without adopting the full shell.</Text></CardBody></Card></div>
+			</div>
+		</Case>
+	</Section>
+</KitchenSinkLayout>

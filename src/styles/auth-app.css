@@ -1,0 +1,10 @@
+@layer screen {
+	.authForm { display: grid; gap: var(--space-5); }
+	.authNotice { padding: var(--space-4); border: 1px solid var(--crit-line); border-radius: var(--radius-2); background: var(--crit-tint); color: var(--crit); font-size: var(--text-12); line-height: var(--leading-body); }
+	.appRailBrand { display: grid; place-items: center; inline-size: 36px; min-block-size: 32px; color: var(--accent); text-decoration: none; }
+	.appHeader { display: flex; align-items: center; gap: var(--space-3); min-inline-size: 0; }
+	.appHeaderActions { display: flex; align-items: center; gap: var(--space-4); margin-inline-start: auto; flex-wrap: wrap; }
+	.appPage { display: grid; gap: var(--space-8); }
+	.appSummaryGrid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(240px, .65fr); gap: var(--space-7); }
+	@media (max-width: 720px) { .appSummaryGrid { grid-template-columns: 1fr; } .appHeaderActions .displayBadge { display: none; } }
+}

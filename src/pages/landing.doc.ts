@@ -8,7 +8,7 @@
  * supplies Astro's lavender bloom; the geometry and light-theme attenuation
  * remain the sibling contract.
  *
- * Cookbook and manual destinations are still future port work, so the current
- * CTAs point only at routes that exist in this Astro slice.
+ * Cookbook and manual destinations are real ported routes, so the CTAs point
+ * to the same destination families exposed by the sibling projects.
  */
 export {};
